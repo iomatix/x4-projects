@@ -1,27 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <content 
-  id="ws_2042901274" 
+  id="ws_2042901274"
   name="Mod Support APIs" 
-  description=" "
-  author="SirNukes" 
-  version="190" 
-  date="2019-07-23" 
-  save="false" 
+  description="Community Version of MIT licensed SirNuke's collection of APIs for modding support. Components include: Lua Loader API, Time API, Named Pipes API, Hotkey API, Interact Menu API, Simple Menu API. 2025-05 Source for X4 7.5: https://github.com/Chryssie/x4-projects/tree/master/extensions/sn_mod_support_apis"
+  author="SirNukes, bvbohnen, Chryssie, iomatix, and others" 
+  version="210" 
+  date="5/11/2025" 
+  save="0" 
   sync="false">
-
-  <text language="7"  description=" "/>
-  <text language="33" description=" "/>
-  <text language="37" description=" "/>
-  <text language="39" description=" "/>
-  <text language="44" description="Collection of APIs for modding support. Components include: Lua Loader API, Time API, Named Pipes API, Hotkey API, Interact Menu API, Simple Menu API." />
-  <text language="49" description=" "/>
-  <text language="55" description=" "/>
-  <text language="81" description=" "/>
-  <text language="82" description=" "/>
-  <text language="86" description=" "/>
-  <text language="88" description=" "/>
-
-  <!--Set X4 version requirement.-->
-  <dependency version="300" />
 </content>
-

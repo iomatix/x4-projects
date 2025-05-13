@@ -1,6 +1,11 @@
 # X4 Projects
 This is a parent repository for several other X4 projects. See readmes in lower folders for details per mod.
 
+## Contributors
+
+<a href="https://github.com/iomatix/x4-projects/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=iomatix/x4-projects" />
+</a>
 
 ### Supporting Development
 

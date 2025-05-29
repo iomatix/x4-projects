@@ -1,568 +1,248 @@
-'''
-Main entry function for the overall python based server.
-This will load in individual pipe sub-servers and run their threads.
-
-Initial version just runs a test server.
-'''
-'''
-
-Note on security:
-    Loading arbitrary python code can be unsafe.  As a light protection,
-    the pipe server will only load modules that are part of extensions
-    that have been given explicit permission to run python.
-
-    Permissions will be held in a json file, holding the extension id
-    (from content.xml) and its permission state (generally true).
-    A special exception will be made for the modding api's id, so it can
-    load without permission set up.
-    The permission file will be generated if it doesn't already exist,
-    but otherwise is left untouched to avoid overwriting user settings.
-
-    The general idea is that, if some random extension added a python
-    plugin to be loaded which may be unsafe, by default it will be rejected
-    until the user of that extension gives it explicit permission.
-
-TODO: change permissions to be folder name based instead of id based.
-
-TODO: maybe permissions from json to ini format.
-
-TODO: maybe use multiprocessing instead of threading.
-
-TODO: think of a safe, scalable way to handle restarting threads,
-particularly subthreads that a user server thread may have started,
-which might get orphaned when that thread function exceptions out
-on pipe closure.  (Currently pipe servers are responsible for
-restarting their own subthreads.)
-
-TODO: rethink server restart behavior; perhaps they should not auto-restart,
-but instead be fully killed when the x4 pipe closes, and then only
-restarted when x4 MD api requests the restart. In this way, mods can change
-their python side code on the fly, reload their save, and the new code
-would get loaded.
-(The md api would need to re-announce servers whenever the game or ui reloads,
-as well as whenever the server resets.)
-(Perhaps this is less robust in some way?)
-(Manual effort needed to clean out the imported packages, similar to what
-is done in some gui code for rerunning scripts.)
-Overall, it is probably reasonably easy for developers to just shut down
-this host server and restart it, if they want to update their server code;
-x4 side should automatically reconnect.
-
-temp copy of test args:
--t -x "C:\Steam\steamapps\common\X4 Foundations" -m "extensions\sn_measure_perf\python\Measure_Perf.py"
-'''
-# Note: version tag set by Make_Executable based on latest version
-# in the change_log. This line should always start "version =".
-version = '1.4.2'
-
-# Setup include path to this package.
 import sys
 import json
-from pathlib import Path
-from collections import defaultdict
 import argparse
-import time
-
-# To support packages cross-referencing each other, set up this
-# top level as a package, findable on the sys path.
-# Extra 'frozen' stuff is to support pyinstaller generated exes.
-# Note:
-#  Running from python, home_path is X4_Projects (or whatever the parent
-#  folder to this package is.
-#  Running from exe, home_path is the folder with the exe itself.
-# In either case, main_path will be to Main.py or the exe.
-if getattr(sys, 'frozen', False):
-    # Note: _MEIPASS gets the directory the packed exe unpacked into,
-    # eg. in appdata/temp.  Need 'executable' for the original exe path.
-    home_path = Path(sys.executable).parent
-    main_path = home_path
-else:
-    home_path = Path(__file__).resolve().parents[1]
-    main_path = Path(__file__).resolve().parent
-if str(home_path) not in sys.path:
-    sys.path.append(str(home_path))
-
-    
-#from X4_Python_Pipe_Server.Servers import Test1
-#from X4_Python_Pipe_Server.Servers import Send_Keys
-from X4_Python_Pipe_Server.Classes import Server_Thread
-from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client
-from X4_Python_Pipe_Server.Classes import Client_Garbage_Collected
+import traceback
+import logging
+from pathlib import Path
+from importlib import machinery
 import win32api
 import winerror
-import win32file
-import win32pipe
-import threading
-import traceback
+from multiprocessing import Process, Event
+import inspect
+from typing import List, Optional, Dict, Callable
+from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
 
-# Note: in other projects importlib.machinery could be used directly,
-# but appears to be failing when pyinstalling this package, so do
-# a more directly import of machinery.
-from importlib import machinery
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Flag to use during development, for extra exception throws.
-developer = False
+# Version and constants
+VERSION = '2.1.0'
+PIPE_NAME = 'x4_python_host'
+DEVELOPER_MODE = False  # Extra exception details for developers
 
-# Name of the host pipe.
-pipe_name = 'x4_python_host'
+# Permissions storage
+permissions: Optional[Dict[str, bool]] = None
+if getattr(sys, 'frozen', False):
+    permissions_path = Path(sys.executable).parent / 'permissions.json'
+else:
+    permissions_path = Path(__file__).resolve().parent / 'permissions.json'
 
-# Loaded permissions from pipe_permissions.json.
-permissions = None
-# Permissions can be placed alongside the exe or Main.py.
-# Or maybe in current working directory?
-# Go with the exe/main directory.
-permissions_path = main_path / 'permissions.json'
+class Server_Process(Process):
+    """A process wrapper for running module main functions with graceful shutdown."""
+    def __init__(self, target: Callable, name: Optional[str] = None):
+        self.stop_event = Event()
+        self.target = target
+        super().__init__(target=self.run_with_stop, name=name)
+        self.daemon = True
 
+    def run_with_stop(self) -> None:
+        """Execute the target function, passing stop_event if supported."""
+        sig = inspect.signature(self.target)
+        if len(sig.parameters) >= 1:
+            self.target(self.stop_event)
+        else:
+            self.target()
 
-def Main():
-    '''
-    Launch the server. This generally does not return.
-    '''
+    def Close(self) -> None:
+        """Signal the process to stop gracefully."""
+        self.stop_event.set()
+
+    def Join(self, timeout: float = 5.0) -> None:
+        """Wait for the process to terminate, with a timeout and forced termination if needed."""
+        self.join(timeout)
+        if self.is_alive():
+            logging.warning(f"Process {self.name} did not terminate in time; terminating forcefully")
+            self.terminate()
+
+def setup_paths() -> None:
+    """Set up sys.path for package inclusion."""
+    if not getattr(sys, 'frozen', False):
+            home_path = Path(__file__).resolve().parents[1]
+            if str(home_path) not in sys.path:
+                sys.path.append(str(home_path))
+
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Host pipe server for X4 interprocess communication.'
+    )
+    parser.add_argument('-p', '--permissions-path', help='Path to permissions.json.')
+    parser.add_argument('-t', '--test', action='store_true', help='Enable test mode.')
+    parser.add_argument('-x', '--x4-path', help='X4 installation path (test mode).')
+    parser.add_argument('-m', '--module', help='Module path (test mode).')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output.')
+    parser.add_argument('--no-restart', action='store_true', help='Disable auto-restart.')
+    args = parser.parse_args()
     
-    # Set up command line arguments.
-    argparser = argparse.ArgumentParser(
-        description = ('Host pipe server for X4 interprocess communication.'
-                       ' This will launch extension python modules that are'
-                       ' registered by the game through the pipe api.'),
-        )
+    if args.test and (not args.x4_path or not args.module):
+        logging.error("Test mode requires --x4-path and --module.")
+        sys.exit(1)
+    return args
 
-    argparser.add_argument(
-        '-p', '--permissions-path',
-        default = None,
-        help =  'Optional path to a permissions.json file specifying which'
-                ' extensions are allowed to load modules. If not given, the'
-                ' main server directory is used.' )
-    
-    argparser.add_argument(
-        '-t', '--test',
-        action='store_true',
-        help =  'Puts this server into test mode. Requires following args:'
-                ' --x4-path, --test_module' )
-    
-    argparser.add_argument(
-        '-x', '--x4-path',
-        default = None,
-        metavar = 'Path',
-        help =  'Path to the X4 installation folder. Only needed in test mode.')
-
-    argparser.add_argument(
-        '-m', '--module',
-        default = None,
-        help =  'Path to a specific python module to run in test mode,'
-                ' relative to the x4-path.' )
-    
-    argparser.add_argument(
-        '-v', '--verbose',
-        action='store_true',
-        help =  'Print extra messages.' )
-       
-    args = argparser.parse_args(sys.argv[1:])
-    
+def load_permissions(args: argparse.Namespace) -> None:
+    """Load or generate the permissions file."""
+    global permissions, permissions_path
     if args.permissions_path:
-        global permissions_path
-        permissions_path = Path.cwd() / (Path(args.permissions_path).resolve())
-        # The directory should exist.
-        if not permissions_path.parent.exists():
-            print('Error: permissions_path directory not found')
-            return
-
-    # Check if running in test mode.
-    test_python_client = False
-    if args.test:
-        test_python_client = True
-
-        if not args.x4_path:
-            print('Error: x4_path required in test mode')
-            return
-
-        if not args.module:
-            print('Error: module required in test mode')
-            return
-
-        # Make x4 path absolute.
-        args.x4_path = Path.cwd() / (Path(args.x4_path).resolve())
-        if not args.x4_path.exists():
-            print('Error: x4_path invalid: {}'.format(args.x4_path))
-            return
-        
-        # Keep module path relative.
-        args.module = Path(args.module)
-        module_path = args.x4_path / args.module
-        if not module_path.exists():
-            print('Error: module invalid: {}'.format(module_path))
-            return
-
-
-    # List of directly launched threads.
-    threads = []
-    # List of relative path strings received from x4, to python server
-    # modules that have been loaded before.
-    module_relpaths = []
-
-    print('X4 Python Pipe Server v{}\n'.format(version))
-
-    # Load permissions, if the permissions file found.
-    Load_Permissions()
-
-    # Put this into a loop, to keep rebooting the server when the
-    # pipe gets disconnected (eg. x4 loaded a save).
-    shutdown = False
-    while not shutdown:
-
-        # Start up the baseline control pipe, listening for particular errors.
-        # TODO: maybe reuse Server_Thread somehow, though don't actually
-        # want a separate thread for this.
-        try:
-            pipe = Pipe_Server(pipe_name, verbose = args.verbose)
-        
-            # For python testing, kick off a client thread.
-            if test_python_client:
-                # Set up the reader in another thread.
-                reader_thread = threading.Thread(target = Pipe_Client_Test, args = (args,))
-                reader_thread.start()
-
-            # Wait for client.
-            pipe.Connect()
-
-            # Clear out any old x4 path; the game may have shut down and
-            # relaunched from a different location.
-            x4_path = None
-
-            # Listen to runtime messages, announcing relative paths to
-            # python modules to load from extensions.
-            while 1:
-                # TODO: put this loop into try/except to catch some error
-                # types without needing a full reboot, eg. keyboard interrupt.
-                # Blocking read.
-                message = pipe.Read()
-                print('Received: ' + message)
-
-                # A ping will be sent first, testing the pipe from x4 side.
-                if message == 'ping':
-                    pass
-
-                # Handle restart requests similar to pipe disconnect exceptions.
-                elif message == 'restart':
-                    raise Reset_Requested()
-            
-                elif message.startswith('package.path:'):
-                    message = message.replace('package.path:','')
-
-                    # Parse into the base x4 path.
-                    # Example return:
-                    # ".\?.lua;C:\Steam\steamapps\common\X4 Foundations\lua\?.lua;C:\Steam\steamapps\common\X4 Foundations\lua\?\init.lua;"
-                    # Split and convert to proper Paths.
-                    paths = [Path(x) for x in message.split(';')]
-
-                    # Search for a wanted path.
-                    x4_path = None
-                    for path in paths:
-                        # Different ways to possibly do this.
-                        # This approach will iterate through parents to find the
-                        # "lua" folder, then get its parent.
-                        # (The folder should not be assumed to match the default
-                        # x4 installation folder name, since a user may have
-                        # changed it if running multiple installs.)
-                        test_path = path
-                        # Loop while more parents are present.
-                        while test_path.parents:
-                            # Check the parent.
-                            test_path = test_path.parent
-                            if test_path.stem == "lua":
-                                x4_path = test_path.parent
-                                break
-                        # Stop looping once an x4_path found.
-                        if x4_path:
-                            break
-
-
-                elif message.startswith('modules:'):
-                    message = message.replace('modules:','')
-
-                    # If no x4_path yet seen, ignore.
-                    if not x4_path:
-                        continue
-
-                    # Break apart the modules. Semicolon separated, with an
-                    # ending separator.
-                    # This list will end with an empty entry, even if the message
-                    # has no paths, so can throw away the last list item.
-                    module_paths = [Path(x) for x in message.split(';')[:-1]]
-
-                    # Handle each path.
-                    for module_path in module_paths:
-
-                        # If this module has already been processed, ignore it.
-                        # This will happen when x4 reloads saves and such, and all
-                        # md scripts re-announce their server files.
-                        if module_path in module_relpaths:
-                            print('Module was already loaded: {}'.format(module_path))
-                            continue
-
-                        # Put together the full path.         
-                        full_path = x4_path / module_path
-
-                        # Check if this module is part of an extension
-                        #  that has permission to run, and skip if not.
-                        if not Check_Permission(x4_path, module_path):
-                            continue
-
-                        # Record this path as seen.
-                        module_relpaths.append(module_path)
-
-                        # Import the module.
-                        module = Import(full_path)
-
-                        # Continue if the import succeeded.
-                        if module != None:
-                            # Pull out the main() function.
-                            main = getattr(module, 'main', None)
-
-                            # Start the thread.
-                            if main != None:
-                                thread = Server_Thread(module.main, test = test_python_client)
-                                threads.append(thread)
-                            else:
-                                print('Module lacks "main()": {}'.format(module_path))
-
-
-        except (win32api.error, Client_Garbage_Collected) as ex:
-            # win32api.error exceptions have the fields:
-            #  winerror : integer error code (eg. 109)
-            #  funcname : Name of function that errored, eg. 'ReadFile'
-            #  strerror : String description of error
-
-            # If just in testing mode, assume the tests completed and
-            #  shut down.
-            if test_python_client:
-                print('Stopping test.')
-                shutdown = True
-
-            elif isinstance(ex, Client_Garbage_Collected):
-                print('Pipe client garbage collected, restarting.')
-                
-            # If another host was already running, there will have been
-            # an error when trying to set up the pipe.
-            elif ex.funcname == 'CreateNamedPipe':
-                print('Pipe creation error. Is another instance already running?')
-                shutdown = True
-                
-            # If X4 was reloaded, this results in a ERROR_BROKEN_PIPE error
-            # (assuming x4 lua was wrestled into closing its pipe properly
-            #  on garbage collection).
-            # Update: as of x4 3.0 or so, garbage collection started crashing
-            #  the game, so this error is only expected when x4 shuts down
-            #  entirely.
-            elif ex.winerror == winerror.ERROR_BROKEN_PIPE:
-                # Keep running the server.
-                print('Pipe client disconnected.')
-
-            else:
-                print(f'Unhandled win32api error: {ex.winerror} in {ex.funcname} : {ex.strerror}')
-                shutdown = True
-                
-            # This should now loop back and restart the pipe, if
-            # shutdown wasn't set.
-            if not shutdown:
-                print('Restarting host.')
-            else:
-                # Pause before closing, so user can see the error.
-                input('Press <enter> to finish exiting...')
-                
-        except Exception as ex:
-            # Any other exception, reraise for now.
-            raise ex
-
-        finally:
-            # Close the pipe if open.
-            # This will error if the exit condition was a CreateNamedPipe
-            # error, so just wrap it for safety.
-            try:
-                pipe.Close()
-            except Exception as ex:
-                pass
-            
-            # Let subthreads keep running; they internally loop.
-            #if threads:
-            #    print('Shutting down subthreads.')
-            ## Close all subthreads.
-            #for thread in threads:
-            #    thread.Close()
-            ## Wait for closures to complete.
-            #for thread in threads:
-            #    thread.Join()
-
-
-
-    #base_thread = Server_Thread(Control)
-
-    # TODO: dynamically load in server modules from extensions.
-    # Need to check which extensions are enabled/disabled, and determine
-    # what the protocol will be for file naming.
-
-    #-Removed; old test code for hardcoded server paths.
-    ## Start all server threads.
-    ## Just a test for now.
-    #threads = [
-    #    Server_Thread(Test1.main),
-    #    Server_Thread(Send_Keys.main),
-    #]
-    ## Wait for them all to finish.
-    #for thread in threads:
-    #    thread.Join()
-
-
-    return
-
-
-def Import(full_path):
-    '''
-    Code for importing a module, broken out for convenience.
-    '''
-    
-    try:
-        # Attempt to load/run the module.
-        module = machinery.SourceFileLoader(
-            # Provide the name sys will use for this module.
-            # Use the basename to get rid of any path, and prefix
-            #  to ensure the name is unique (don't want to collide
-            #  with other loaded modules).
-            'user_module_' + full_path.name.replace(' ','_'),
-            # Just grab the name; it should be found on included paths.
-            str(full_path)
-            ).load_module()
-        print('Imported {}'.format(full_path))
-                
-    except Exception as ex:
-        module = None
-
-        # Make a nice message, to prevent a full stack trace being
-        #  dropped on the user.
-        print('Failed to import {}'.format(full_path))
-        print('Exception of type "{}" encountered.\n'.format(
-            type(ex).__name__))
-        ex_text = str(ex)
-        if ex_text:
-            print(ex_text)
-
-        # In dev mode, print the exception traceback.
-        if developer:
-            print(traceback.format_exc())
-            # Raise it again, just in case vs can helpfully break
-            # at the problem point. (This won't help with the gui up.)
-            raise ex
-        #else:
-        #    Print('Enable developer mode for exception stack trace.')
-
-    return module
-
-
-def Load_Permissions():
-    '''
-    Loads the permissions json file, or creates one if needed.
-    '''
-    global permissions
+        permissions_path = Path(args.permissions_path).resolve()
     if permissions_path.exists():
         try:
-            with open(permissions_path, 'r') as file:
-                permissions = json.load(file)
-            print('Loaded permissions file at {}\n'.format(permissions_path))
-        except Exception as ex:
-            print('Error when loading permissions file')
-
-    # If nothing was loaded, write (or overwrite) the default permissions file.
-    if permissions == None:
+            with permissions_path.open('r') as f:
+                permissions = json.load(f)
+            logging.info(f"Loaded permissions from {permissions_path}")
+        except json.JSONDecodeError as e:
+            logging.error(f"Failed to parse permissions: {e}")
+    if not permissions:
         permissions = {
-            'instructions': 'Set which extensions are allowed to load modules,'
-                            ' based on extension id (in content.xml).',
-            # Workshop id of the mod support apis.
-            'ws_2042901274' : True,
-            }
-        print('Generating default permissions file at {}\n'.format(permissions_path))
-        with open(permissions_path, 'w') as file:
-            json.dump(permissions, file, indent = 2)
-    return
+            'instructions': 'Set allowed extension IDs or folder names. IDs take precedence.',
+            'ws_2042901274': True  # Modding API ID
+        }
+        with permissions_path.open('w') as f:
+            json.dump(permissions, f, indent=2)
+        logging.info(f"Created default permissions at {permissions_path}")
 
-
-def Check_Permission(x4_path, module_path):
-    '''
-    Check if the module on the given path has permission to run.
-    Return True if permitted, else False with a printed message.
-    '''
+def check_permission(x4_path: Path, module_path: Path) -> bool:
+    """Verify module permission using extension ID or folder name."""
     try:
-        # Find the extension's root folder.
         if not module_path.as_posix().startswith('extensions/'):
-            raise Exception('Module is not in extensions')
-
-        # The module_path should start with 'extensions', so find the
-        # second folder. Use negative indexing to go backwards, eg.
-        # -1 is ".", -2 is "extensions", -3 is the extension folder.
-        # (Note: pathlib is dumb and doesn't allow negative indices on parents.)
-        ext_dir = x4_path / [x for x in module_path.parents][-3]
-
-        # Load the content.xml. Can do xml or raw text; text should
-        # be good enough for now (avoid adding lxml to the exe).
-        content_text = (ext_dir / 'content.xml').read_text()
-
-        # The first id="..." should be the extension id.
-        content_id = content_text.split('id="')[1].split('"')[0]
-
-        # Check its permission.
-        if permissions.get(content_id) == True:
+            raise ValueError("Module not in extensions directory")
+        ext_dir = x4_path / module_path.parents[-3]
+        folder_name = ext_dir.name
+        content = (ext_dir / 'content.xml').read_text()
+        ext_id = content.split('id="')[1].split('"')[0]
+        
+        # Check by ID first
+        if ext_id in permissions and permissions[ext_id]:
             return True
-        print('\n'.join([
-            '',
-            'Rejecting module due to missing permission:',
-            ' content_id: {}'.format(content_id),
-            ' path: {}'.format(x4_path / module_path),
-            'To allow loading, enable this content_id in {}'.format(permissions_path),
-            '',
-            ]))
+        # Fallback to folder name
+        elif folder_name in permissions and permissions[folder_name]:
+            return True
+        logging.warning(f"Module {module_path} (ID: {ext_id}, Folder: {folder_name}) lacks permission")
+        return False
+    except (FileNotFoundError, IndexError, ValueError) as e:
+        logging.error(f"Permission check failed for {module_path}: {e}")
         return False
 
-    except Exception as ex:
-        print('\n'.join([
-            '',
-            'Rejecting module due to error during extension id permission check:',
-            ' path: {}'.format(x4_path / module_path),
-            '{}: {}'.format(type(ex).__name__, ex if str(ex) else 'Unspecified'),
-            '',
-            ]))
-        return False
+def import_module(path: Path):
+    """Import a Python module from the given path."""
+    try:
+        module_name = f"user_module_{path.name.replace(' ', '_')}"
+        module = machinery.SourceFileLoader(module_name, str(path)).load_module()
+        logging.info(f"Imported module {path}")
+        return module
+    except ImportError as e:
+        logging.error(f"Import failed for {path}: {e}")
+        if DEVELOPER_MODE:
+            logging.error(traceback.format_exc())
+        return None
 
+def run_server(args: argparse.Namespace) -> None:
+    """Run the main server loop, managing module processes."""
+    processes: List[Server_Process] = []
+    module_relpaths: List[Path] = []
+    shutdown = False
 
-def Pipe_Client_Test(args):
-    '''
-    Function to mimic the x4 client.
-    '''
-    pipe = Pipe_Client(pipe_name)
+    while not shutdown:
+        pipe = None
+        try:
+            pipe = Pipe_Server(PIPE_NAME, verbose=args.verbose)
+            if args.test:
+                threading.Thread(target=pipe_client_test, args=(args,)).start()
+            pipe.Connect()
+            x4_path: Optional[Path] = None
 
-    if not args.x4_path or not args.x4_path.exists():
-        raise Exception('Test error: invalid x4 path')
+            while True:
+                message = pipe.Read()
+                logging.info(f"Received: {message}")
 
-    # Example lua package path.
-    #package_path = r".\?.lua;C:\Steam\steamapps\common\X4 Foundations\lua\?.lua;C:\Steam\steamapps\common\X4 Foundations\lua\?\init.lua;"
-    package_path = r".\?.lua;{0}\lua\?.lua;{0}\lua\?\init.lua;".format(args.x4_path)
+                if message == 'ping':
+                    continue
+                elif message == 'restart':
+                    break
+                elif message.startswith('package.path:'):
+                    paths = [Path(p) for p in message[13:].split(';')]
+                    for p in paths:
+                        test_path = p
+                        while test_path.parents:
+                            if test_path.parent.name == 'lua':
+                                x4_path = test_path.parent
+                                break
+                            test_path = test_path.parent
+                elif message.startswith('modules:') and x4_path:
+                    module_paths = [Path(p) for p in message[8:].split(';')[:-1]]
+                    for mp in module_paths:
+                        if mp in module_relpaths:
+                            continue
+                        full_path = x4_path / mp
+                        if not check_permission(x4_path, mp):
+                            continue
+                        module_relpaths.append(mp)
+                        module = import_module(full_path)
+                        if module and hasattr(module, 'main'):
+                            main_func = module.main
+                            process_name = f"Process_{mp.as_posix().replace('/', '_')}"
+                            if len(inspect.signature(main_func).parameters) >= 1:
+                                process = Server_Process(target=main_func, name=process_name)
+                                logging.info(f"Module {mp} supports graceful shutdown")
+                            else:
+                                def wrapper(stop_event: Event) -> None:
+                                    main_func()
+                                process = Server_Process(target=wrapper, name=process_name)
+                                logging.warning(f"Module {mp} does not support graceful shutdown")
+                            processes.append(process)
+                            process.start()
 
-    # Announce the package path.
-    pipe.Write("package.path:" + package_path)
+        except (win32api.error, Client_Garbage_Collected) as e:
+            if args.test:
+                shutdown = True
+                logging.info("Test mode completed")
+            elif isinstance(e, Client_Garbage_Collected):
+                logging.info("Client garbage collected")
+            elif e.funcname == 'CreateNamedPipe':
+                logging.error("Pipe creation failed; another instance running?")
+                shutdown = True
+            elif e.winerror == winerror.ERROR_BROKEN_PIPE:
+                logging.info("Client disconnected")
+            else:
+                logging.error(f"Win32 error: {e.winerror} in {e.funcname}: {e.strerror}")
+                shutdown = True
+            if shutdown:
+                input("Press Enter to exit...")
+            elif not args.no_restart:
+                logging.info("Restarting server")
+            else:
+                shutdown = True
+        except KeyboardInterrupt:
+            logging.info("Interrupted by user")
+            shutdown = True
+        except Exception as e:
+            logging.error(f"Unexpected error: {e}")
+            raise
+        finally:
+            if pipe:
+                try:
+                    pipe.Close()
+                except Exception:
+                    pass
+            if shutdown:
+                for p in processes:
+                    p.Close()
+                for p in processes:
+                    p.Join()
 
-    # Announce module relative paths.
-    # Just one test module for now.
-    # Give as_posix style.
-    modules = [
-        args.module.as_posix(),
-        ]
-    # Separated with ';', end with a ';'.
-    message = ';'.join(modules) + ';'
-    pipe.Write("modules:" + message)
-
-    # Keep-alive blocking read.
+def pipe_client_test(args: argparse.Namespace) -> None:
+    """Simulate X4 client for testing."""
+    pipe = Pipe_Client(PIPE_NAME)
+    package_path = f".\\?.lua;{args.x4_path}\\lua\\?.lua;{args.x4_path}\\lua\\?\\init.lua;"
+    pipe.Write(f"package.path:{package_path}")
+    pipe.Write(f"modules:{args.module.as_posix()};")
     pipe.Read()
-                
-    return
 
+def main() -> None:
+    """Entry point for the server."""
+    setup_paths()
+    args = parse_args()
+    load_permissions(args)
+    run_server(args)
 
 if __name__ == '__main__':
-    Main()
-
+    main()

@@ -1,101 +1,67 @@
-
 import threading
+import logging
 import win32api
 import winerror
 from .Misc import Client_Garbage_Collected
 
-class Server_Thread:
+class Server_Thread(threading.Thread):
     '''
     Class to handle a single server thread.
-    Starts a pipe server in a seperate thread, which runs until it closes.
-    If the x4 client pipe is closed, the server will be restarted.
-    
-    TODO: support cleanly closing threads, likely with a global flag
-    checked by pipe operations which raise a special exception.
-    TODO: maybe make this a subclass of threading.Thread, and customize
-    the run/start methods.
+    Runs a pipe server in a separate thread, restarting it if the X4 client pipe is closed.
+    Supports clean shutdown via a stop_event.
 
     Attributes:
     * entry_function
       - The function which will set up a Pipe and service it.
-      - This should not expect to store any state through game reloads,
-        since such events will cause the function to be restarted
-        from scratch.
-    * thread
-      - Thread running the server.
+      - This function should accept a dictionary with 'test' and 'stop_event' keys.
+      - It should check the stop_event periodically to allow for clean shutdown.
     * test
-      - Bool, if True then in test mode, and server will not reboot on
-        a disconnect.
+      - Bool, if True then in test mode, and the server will not reboot on a disconnect.
+    * stop_event
+      - threading.Event object used to signal the thread to stop.
     '''
-    def __init__(self, entry_function, test = False):
-        # Set up the thread.
-        # For potential future development, the thread will call a
-        #  class method on this class object, inheriting any object
-        #  attributes.
+    def __init__(self, entry_function, test=False):
+        super().__init__()
         self.entry_function = entry_function
         self.test = test
-        self.thread = threading.Thread(target = self.Run_Server, 
-                                       args = [])
-        self.thread.start()
-        return            
+        self.stop_event = threading.Event()
+        # Start the thread immediately, as this object is now the thread
+        self.start()
 
-
-    def Run_Server(self):
+    def run(self):
         '''
-        Entry point for a thread.
-        This will run the server's entry_function, restarting it whenever
-        the x4 pipe is broken, finishing when the function returns
-        normally or on other exception.
+        Entry point for the thread.
+        Runs the server's entry_function, restarting it whenever the X4 pipe is broken,
+        unless the stop_event is set or in test mode.
         '''
         boot_server = True
-        while boot_server:
+        while boot_server and not self.stop_event.is_set():
             boot_server = False
-
-            # Fire up the server, listening for particular errors.
             try:
-                # Pass any args of interest, notably the test mode flag.
-                self.entry_function({'test' : self.test})
-                
+                # Pass test mode and stop_event to the entry_function
+                self.entry_function({'test': self.test, 'stop_event': self.stop_event})
             except (win32api.error, Client_Garbage_Collected) as ex:
-                # win32api.error exceptions have the fields:
-                #  winerror : integer error code (eg. 109)
-                #  funcname : Name of function that errored, eg. 'ReadFile'
-                #  strerror : String description of error
-
                 if self.test:
-                    print('Pipe client disconnected; stopping test.')
-                    
+                    logging.info('Pipe client disconnected; stopping test.')
                 elif isinstance(ex, Client_Garbage_Collected):
-                    print('Pipe client garbage collected, restarting server.')
-                    # Keep running the server.
+                    logging.info('Pipe client garbage collected, restarting server.')
                     boot_server = True
-                
-                # If X4 was reloaded, this results in a ERROR_BROKEN_PIPE error
-                # (assuming x4 lua was wrestled into closing its pipe properly
-                #  on garbage collection).
                 elif ex.winerror == winerror.ERROR_BROKEN_PIPE:
-                    print('Pipe client disconnected, restarting server.')
-                    # Keep running the server.
+                    logging.info('Pipe client disconnected, restarting server.')
                     boot_server = True
-
-            #except Exception as ex:
-            #    # Any other exception, reraise for now.
-            #    raise ex
-
-        return
-    
 
     def Close(self):
         '''
-        Close the server thread, perhaps unsafely.
-        Pending development.
+        Signal the thread to stop by setting the stop_event.
+        The thread will exit the next time it checks the stop_event.
         '''
-        return
+        self.stop_event.set()
 
-
-    def Join(self):
+    def Join(self, timeout=5.0):
         '''
-        Calls thread.join, blocking until the thread returns.
+        Wait for the thread to terminate, with a timeout.
+        If the thread does not terminate within the timeout, log a warning.
         '''
-        self.thread.join()
-        return
+        super().join(timeout)
+        if self.is_alive():
+            logging.warning(f"Thread {self.name} did not terminate within {timeout} seconds")

@@ -1,8 +1,14 @@
-from ..Classes import Pipe_Server
-import time
-from threading import Event
+import sys
 from pathlib import Path
-from ..Classes import Log_Reader
+from threading import Event
+
+# Add the root directory to sys.path
+root_dir = Path(__file__).resolve().parents[2]  # Navigate up to X4_Python_Pipe_Server
+sys.path.insert(0, str(root_dir))
+
+# Absolute imports
+from X4_Python_Pipe_Server.Classes import Pipe_Server
+from X4_Python_Pipe_Server.Classes import Log_Reader
 
 # Test1.py - Testing Script
 # Simple Key-Value Store Server. Tests pipe communication and logging with a key-value store.

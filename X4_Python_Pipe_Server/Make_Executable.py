@@ -6,6 +6,9 @@ from pathlib import Path
 import subprocess
 import time
 
+# Make_Executable.py - Compilation Script
+# Packages the project into an executable using PyInstaller.
+
 # Conditional import of pyinstaller, checking if it is available.
 try:
     import PyInstaller

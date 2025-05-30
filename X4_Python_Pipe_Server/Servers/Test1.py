@@ -1,87 +1,78 @@
+from ..Classes import Pipe_Server
+import time
+from threading import Event
+from pathlib import Path
+from ..Classes import Log_Reader
 
-# TODO: generic import suitable to dynamicly imported modules.
-# TODO: x4 model using Pipe_Client (can take/edit from Old/Test.py).
-from ..Classes import Pipe_Server, Pipe_Client
+# Test1.py - Testing Script
+# Simple Key-Value Store Server. Tests pipe communication and logging with a key-value store.
 
-def main():
+def main(args: dict):
     '''
-    Entry function for this server.
-    In this test, the server acts as a memory.
-    X4 writes using: "write:[key]data"
-    X4 reads using : "read:[key]"
+    Test server acting as a simple key-value store with log reading.
 
-    Example:
-        "write:[food]bard" stores "bard" at "food"
-        "read:[food]"      returns "bard" to x4
+    Args:
+    * args: Dictionary containing 'stop_event' (threading.Event) for shutdown.
+
+    The server handles:
+    - "write:[key]data" to store data
+    - "read:[key]" to retrieve data
+    - "close" to shut down
     '''
-    # Set up the pipe and connect to x4.
+    # Initialize pipe server
     pipe = Pipe_Server('x4_pipe')
-
-    # TODO: set up python reference client model.
-
-    # Wait for client.
     pipe.Connect()
-    
-    # These will be read/write transactions to a data table, stored here.
+
+    # Initialize log reader (for demonstration, write to a temp log file)
+    log_file = Path('test_log.txt')
+    if not log_file.exists():
+        log_file.touch()
+    log_reader = Log_Reader(log_file)
+
+    # Data store
     data_store = {}
 
-    # Loop ends on getting a 'close' command.
-    close_requested = False
-    while not close_requested:
-                
-        # Get the next control message.
-        message = pipe.Read()
-        print('Received: ' + message)
+    # Simulate logging by appending to the file
+    def log_message(msg: str):
+        with log_file.open('a') as f:
+            f.write(f"{msg}\n")
 
-        # Testing: delay on processing write.
-        # Used originally to let multiple x4 writes queue up, potentially
-        # hitting a full buffer.
-        if 0:
-            print('Pausing for a moment...')
-            time.sleep(0.5)
+    stop_event = args.get('stop_event', Event())
+    while not stop_event.is_set():
+        try:
+            # Read from pipe
+            message = pipe.Read()
+            print(f"Received: {message}")
+            log_message(f"Received: {message}")
 
-        # Handle based on prefix, write or read.
-        if message.startswith('write:'):
-            # Expected format is:
-            #  write:[key]value
-            # (Or possibly a chain of keys? just one for now)
-            key, value = message.split(':')[1].split(']')
-            # Pull out the starting bracket.
-            key = key[1:]
-            # Save.
-            data_store[key] = value
-
-        elif message.startswith('read:'):
-            # Expected format is:
-            #  read:[key]
-            key = message.split(':')[1]
-            key = key[1:-1]
-
-            if key not in data_store:
-                response = 'error: {} not found'.format(key)
-            else:
-                response = data_store[key]
-
-            # Pipe the response back.
-            # Note: data is binary in the pipe, but treated as string in lua,
-            # plus lua apparently has no integers (just doubles), but does have
-            # string pack/unpack functions.
-            # Anyway, it is easiest to make strings canonical for this, for now.
-            # TODO: consider passing some sort of format specifier so the
-            #  data can be recast in the lua.
-            # Optionally do a read timeout test, which doesn't return data.
-            timeout_test = 0
-            if timeout_test:
-                print('Suppressing read return; testing timeout.')
-            else:
+            if message == 'close':
+                break
+            elif message.startswith('write:'):
+                key, value = message[6:].split(']', 1)
+                key = key[1:]
+                data_store[key] = value
+                log_message(f"Stored: {key} = {value}")
+            elif message.startswith('read:'):
+                key = message[5:-1]
+                response = data_store.get(key, f"error: {key} not found")
                 pipe.Write(response)
-                print('Returned: ' + response)
+                log_message(f"Returned: {response}")
+                print(f"Returned: {response}")
 
-        elif message == 'close':
-            # Close the pipe/server when requested.
-            close_requested = True
+            # Check log reader (non-blocking with timeout)
+            log_line = log_reader.readline(timeout=0.1)
+            if log_line:
+                print(f"Log Reader: {log_line}")
 
-        else:
-            print('Unexpected message type')
+            # Trim log if too large
+            log_reader.trim_log(max_size=1024)  # 1KB for testing
 
-    return
+        except Exception as e:
+            print(f"Error: {e}")
+            log_message(f"Error: {e}")
+
+    pipe.Close()
+    print("Server stopped")
+
+if __name__ == "__main__":
+    main({'stop_event': Event()})

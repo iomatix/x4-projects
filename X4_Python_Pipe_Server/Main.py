@@ -12,6 +12,9 @@ import inspect
 from typing import List, Optional, Dict, Callable
 from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
 
+# Main.py - Core
+# Manages the server lifecycle, including pipe setup, module loading, and process management.
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

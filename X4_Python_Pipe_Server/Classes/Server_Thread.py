@@ -4,6 +4,9 @@ import win32api
 import winerror
 from .Misc import Client_Garbage_Collected
 
+# Server_Thread.py - Thread Management
+# Runs server logic in a thread with restart capabilities.
+
 class Server_Thread(threading.Thread):
     '''
     Class to handle a single server thread.

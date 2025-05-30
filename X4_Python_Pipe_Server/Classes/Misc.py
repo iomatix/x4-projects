@@ -1,7 +1,8 @@
+# Misc.py - Custom Exceptions
+# Defines Client_Garbage_Collected for pipe-specific error handling.
 
 class Client_Garbage_Collected(Exception):
     '''
-    Custom exception to signal upstream when a client pipe is being
-    garbage collected. Added as an alternative to proper file closing,
-    since that started crashing x4 around v3.0.
+    Custom exception raised when a client pipe is garbage collected.
+    Used as an alternative to proper file closing due to crashes in X4 v3.0.
     '''

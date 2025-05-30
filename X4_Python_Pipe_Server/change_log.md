@@ -41,10 +41,22 @@ Change Log
   - Added `--no-restart` flag for manual control of server restarts and kept the autorestart by default. It improves testing and development but is not important for end-user players.
   - Added docstrings and comments.
   - Applied sandboxing techniques to improve security while executing `.py` files. `Server_Process` class uses multiprocessing.Process to isolate each module in its own process - it prevents direct access to the main server's resoruces.
-  - Immplemented `stop_event` to allow modules to shut down with a timeout and forced termination as a fallback.
+  - Implemented `stop_event` to allow modules to shut down with a timeout and forced termination as a fallback.
   - Implemented Hybrid aproach for permissions. Method `check_permission` checks both extension IDs and folder names. Prioritizing IDs for consistency.
   - Subclassed threading.Thread - the class inherits instead of creating a separate thread object.
   - Added threading.Event object to signal thread to stop with `stop_event`. It allows for closing threads cleanly.
   - Improved `Join` method to accept a timeout parameter with default value eq to 5 seconds.
   - Replaced `print` statements with logging.info calls.
-  TODO: Refactors of Pipe.py, Misc.py, Lot_Reader.py
+  - Implemented paired pipes (`_in` and `_out`) for better Linux compatibility and concurrency.
+  - Added type hints to all methods for clarity.
+  - Replaced `print` with `logging.info`/`warning`.
+  - Added `__enter__` and `__exit__` for resource management.
+  - Improved in `Read` and `Write` with logging.
+  - Added an optional `timeout` parameter. If exceeded, returns `None`, preventing indefinite blocking.
+  - Implemented `trim_log` to address TODO for cleaning old lines, trimming the file to the last `max_size` bytes when it grows too large.
+  - Replaced advance with `seek(0,2)` for efficiency, directly jumping to the end.
+  - Added support for `stop_event` to allow graceful shutdown in a threaded environment.
+  - Added a basic test of `Log_Reader` by writting pipe messages to a log file and reading them back with a short timeout.
+  - Kept exception handling with logging.
+  - Calling `trim_log` to test the file size management.
+  - Structured to accept `args` for flexibility in testing setups.

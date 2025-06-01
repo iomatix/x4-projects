@@ -76,3 +76,4 @@ Change Log for overall api package.
   - Improved garbage collection and clarified its behavior.
   - Enhanced error handling for pip full vs broken states where feasible.
   - Moved polling registration logic into `Poll_For_Reads` and `Poll_For_Writes` for better encapsulation.
+  - updated `winpipe_64.dll` to use `w`/`r` instead of biderectional pipes.

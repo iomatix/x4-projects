@@ -38,7 +38,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", functi
                 "luaopen_winpipe")()
         elseif is_post_3_3_hf1 then
             -- Load the updated DLL in bidirectional mode for 3.3 hf1+ pre-2.1.0.
-            DebugError("winpipe.lua: Loading winpipe_64_post3p3hf1.dll for 3.3 hf1+ bidirectional pipes")
+            DebugError("winpipe.lua: Loading winpipe_64.dll for 3.3 hf1+ bidirectional pipes")
             return package.loadlib(
                 ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_post3p3hf1.dll",
                 "luaopen_winpipe")()

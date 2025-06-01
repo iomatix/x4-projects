@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.named_pipes.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Interface",function(require)
 --[[
 MD to Lua Pipe API
 
@@ -53,7 +53,7 @@ largely the same as for the MD interface, except that results will be
 returned to lua callback functions instead of being signalled to MD.
 It may be imported using a require statement:
 ```lua
-  local pipes_api = require('extensions.sn_named_pipes_api.lua.Interface')
+  local pipes_api = require('extensions.sn_named_pipes_api.ui.Interface')
 ```
 
 See named_pipes_api/lua/Pipes.lua for everything available. Basic
@@ -84,9 +84,9 @@ ffi.cdef[[
 ]]
 
 -- Import lib functions and pipe management.
-local Lib = require("extensions.sn_mod_support_apis.lua.named_pipes.Library")
-local Pipes = require("extensions.sn_mod_support_apis.lua.named_pipes.Pipes")
-local Print_Table = require("extensions.sn_mod_support_apis.lua.Library").Print_Table
+local Lib = require("extensions.sn_mod_support_apis.ui.named_pipes.Library")
+local Pipes = require("extensions.sn_mod_support_apis.ui.named_pipes.Pipes")
+local Print_Table = require("extensions.sn_mod_support_apis.ui.Library").Print_Table
 
 
 -- Table of local functions or data.

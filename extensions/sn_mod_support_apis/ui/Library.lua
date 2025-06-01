@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.Library",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.Library",function(require)
 --[[
 Library functions to be shared across apis.
 
@@ -229,7 +229,7 @@ end
 
 
 
--- FIFO definition, largely lifted from https://www.lua.org/pil/11.4.html
+-- FIFO definition, largely lifted from https://www.ui.org/pil/11.4.html
 -- Adjusted for pure fifo behavior.
 -- TODO: change to act as methods.
 local FIFO = {}

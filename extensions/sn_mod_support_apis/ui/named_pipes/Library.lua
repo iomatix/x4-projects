@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.named_pipes.Library",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Library",function(require)
 -- Table holding lib functions to be returned, or lib params that can
 -- be modified.
 local L = {
@@ -8,7 +8,7 @@ local L = {
 }
 
 -- Include stuff from the shared library.
-local Lib_shared = require("extensions.sn_mod_support_apis.lua.Library")
+local Lib_shared = require("extensions.sn_mod_support_apis.ui.Library")
 Lib_shared.Table_Update(L, Lib_shared)
 
 -- Shared function to raise a named galaxy signal with an optional

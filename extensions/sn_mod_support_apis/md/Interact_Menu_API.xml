@@ -22,7 +22,7 @@
       </conditions>
       <actions>
         <raise_lua_event name="'Lua_Loader.Load'"
-                         param="'extensions.sn_mod_support_apis.lua.interact_menu.Interface'"/>
+                         param="'extensions.sn_mod_support_apis.ui.interact_menu.Interface'"/>
       </actions>
     </cue>
 
@@ -238,7 +238,7 @@
         - String, optional name of an icon to prefix before the mouseover text.
       * $section = 'main'
         - Optional string, the menu section this action will go under.
-        - Should be one from menu_interactmenu.lua config.sections.
+        - Should be one from menu_interactmenu.ui config.sections.
         - TODO: Document these somewhat.
         - For now, just use "main" or "interaction".
       * $callback
@@ -432,7 +432,7 @@
           scaled to 32 height.
       * $section = 'main'
         - Optional string, the menu section this action will go under.
-        - Should be one from menu_interactmenu.lua config.sections.
+        - Should be one from menu_interactmenu.ui config.sections.
         - TODO: Document these somewhat.
         - For now, just use "main" or "interaction".
       * $enabled_conditions
@@ -944,6 +944,3 @@
   </cues>
 
 </mdscript>
-
-
-

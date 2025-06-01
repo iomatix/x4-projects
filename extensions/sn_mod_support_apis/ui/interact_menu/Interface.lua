@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.interact_menu.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.interact_menu.Interface",function(require)
 --[[
 Module for adding new context menu actions.
 Note: not dependent on the simple menu flow directly, except for
@@ -187,8 +187,8 @@ ffi.cdef[[
 local debugger = {
     verbose = false,
 }
-local Lib = require("extensions.sn_mod_support_apis.lua.Library")
-local Time = require("extensions.sn_mod_support_apis.lua.time.Interface")
+local Lib = require("extensions.sn_mod_support_apis.ui.Library")
+local Time = require("extensions.sn_mod_support_apis.ui.time.Interface")
 
 
 

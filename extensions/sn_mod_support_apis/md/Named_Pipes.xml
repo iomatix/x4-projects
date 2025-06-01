@@ -65,7 +65,7 @@ TODO:
     </conditions>
     <actions>
       <raise_lua_event name="'Lua_Loader.Load'" 
-                       param="'extensions.sn_mod_support_apis.lua.named_pipes.Interface'"/>
+                       param="'extensions.sn_mod_support_apis.ui.named_pipes.Interface'"/>
     </actions>
   </cue>
 

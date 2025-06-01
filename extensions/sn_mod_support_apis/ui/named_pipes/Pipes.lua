@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.named_pipes.Pipes",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes",function(require)
 --[[
 Functionality for opening, reading, writing to pipes.
 
@@ -28,16 +28,16 @@ ffi.cdef[[
 
 -- Load in the winpipe dll, which has been set up with the necessary
 -- Windows functions for working with pipes.
-local winpipe = require("extensions.sn_mod_support_apis.lua.c_library.winpipe")
+local winpipe = require("extensions.sn_mod_support_apis.ui.c_library.winpipe")
 -- If not on windows, the above will be nil, and the pipe will be treated
 -- as disconnected.
 
-local Lib = require("extensions.sn_mod_support_apis.lua.named_pipes.Library")
+local Lib = require("extensions.sn_mod_support_apis.ui.named_pipes.Library")
 FIFO = Lib.FIFO
 -- Pass along any debug params.
 Lib.debug.print_to_log = debug.print_to_log
 
-local Time = require("extensions.sn_mod_support_apis.lua.time.Interface")
+local Time = require("extensions.sn_mod_support_apis.ui.time.Interface")
 
 
 -- Local functions and state. These are returned on require().

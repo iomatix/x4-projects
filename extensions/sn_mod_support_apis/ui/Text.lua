@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.Text",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.Text",function(require)
 --[[
     Wrapper for various text lookups from the t files, using ReadText.
     Standardizes the text names for code management, and maybe even speeds

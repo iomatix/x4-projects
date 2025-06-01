@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.time.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.time.Interface",function(require)
 --[[
 This module adds real time support accessible from md.
 

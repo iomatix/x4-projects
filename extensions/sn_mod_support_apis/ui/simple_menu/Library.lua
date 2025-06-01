@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.simple_menu.Library",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.simple_menu.Library",function(require)
 --[[
     Misc functions split off into a library file.
     Mostly string or table processing.
@@ -8,7 +8,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.lua.simple_menu.Library",funct
 local L = {}
 
 -- Include stuff from the shared library.
-local Lib_shared = require("extensions.sn_mod_support_apis.lua.Library")
+local Lib_shared = require("extensions.sn_mod_support_apis.ui.Library")
 Lib_shared.Table_Update(L, Lib_shared)
 
 

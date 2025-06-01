@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.simple_menu.Options_Menu",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.simple_menu.Options_Menu",function(require)
 --[[ 
 Interface into the ego options menu.
 
@@ -13,7 +13,7 @@ accessible to the player (without relying on the hotkey api or similar).
 
 
 -- Import config and widget_properties tables.
-local Tables = require("extensions.sn_mod_support_apis.lua.simple_menu.Tables")
+local Tables = require("extensions.sn_mod_support_apis.ui.simple_menu.Tables")
 local widget_properties = Tables.widget_properties
 local widget_defaults   = Tables.widget_defaults
 local config            = Tables.config
@@ -21,12 +21,12 @@ local menu_data         = Tables.menu_data
 local debugger          = Tables.debugger
 local custom_menu_specs = Tables.custom_menu_specs
 
-local T = require("extensions.sn_mod_support_apis.lua.Text")
+local T = require("extensions.sn_mod_support_apis.ui.Text")
 
 
 -- Import library functions for strings and tables.
-local Lib = require("extensions.sn_mod_support_apis.lua.simple_menu.Library")
-local Time = require("extensions.sn_mod_support_apis.lua.time.Interface")
+local Lib = require("extensions.sn_mod_support_apis.ui.simple_menu.Library")
+local Time = require("extensions.sn_mod_support_apis.ui.time.Interface")
 
 -- Container for local functions that will be exported.
 local menu = {}

@@ -67,3 +67,6 @@ Change Log for overall api package.
   - Chat api and hotkey menu integration disabled pending further updates.
 * 1.90
   - Fixed interact menu bug introduced in 1.89 that prevented Get_Actions calls.
+* 2.1.X
+  - Added base compatibility with UI proteceted mode.
+  - Applied fixes for paths within .xmls using `ui` path instead of `lua`, corrected same thing within LUA loader's part.

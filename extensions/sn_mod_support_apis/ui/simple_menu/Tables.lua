@@ -1,10 +1,10 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.simple_menu.Tables",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.simple_menu.Tables",function(require)
 --[[
 Container for data tables, shared by other active modules.
 ]]
 
 -- Import library functions, to help with table setup.
-local Lib = require("extensions.sn_mod_support_apis.lua.simple_menu.Library")
+local Lib = require("extensions.sn_mod_support_apis.ui.simple_menu.Library")
 
 local T = {}
 

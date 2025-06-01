@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.userdata.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.userdata.Interface",function(require)
 --[[
     Support for accessing userdata from uidata.xml, stored in the
     __MOD_USERDATA global table.
@@ -20,7 +20,7 @@ ffi.cdef[[
 -- Default table holding generic mod data saved to the uidata.xml file.
 __MOD_USERDATA = __MOD_USERDATA or {}
 
-local Lib = require("extensions.sn_mod_support_apis.lua.Library")
+local Lib = require("extensions.sn_mod_support_apis.ui.Library")
 
 -- Local functions/data.
 local L = {

@@ -29,7 +29,7 @@
       </conditions>
       <actions>
         <raise_lua_event name="'Lua_Loader.Load'"
-                         param="'extensions.sn_mod_support_apis.lua.chat_window.Interface'"/>
+                         param="'extensions.sn_mod_support_apis.ui.chat_window.Interface'"/>
       </actions>
     </cue>
     
@@ -244,6 +244,3 @@
   </cues>
 
 </mdscript>
-
-
-

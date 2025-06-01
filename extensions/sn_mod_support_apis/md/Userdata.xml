@@ -31,7 +31,7 @@
       </conditions>
       <actions>
         <raise_lua_event name="'Lua_Loader.Load'"
-                         param="'extensions.sn_mod_support_apis.lua.userdata.Interface'"/>
+                         param="'extensions.sn_mod_support_apis.ui.userdata.Interface'"/>
       </actions>
     </cue>
 

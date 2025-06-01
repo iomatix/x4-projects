@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.hotkey.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface",function(require)
 --[[
 Lua side of the hotkey api.
 This primarily aims to interface tightly with the egosoft menu system,
@@ -49,11 +49,11 @@ ffi.cdef[[
 ]]
 
 -- Imports.
-local Lib = require("extensions.sn_mod_support_apis.lua.Library")
-local Time = require("extensions.sn_mod_support_apis.lua.time.Interface")
-local T = require("extensions.sn_mod_support_apis.lua.Text")
+local Lib = require("extensions.sn_mod_support_apis.ui.Library")
+local Time = require("extensions.sn_mod_support_apis.ui.time.Interface")
+local T = require("extensions.sn_mod_support_apis.ui.Text")
 -- Reuse the config table from simple menu api.
-local Tables = require("extensions.sn_mod_support_apis.lua.simple_menu.Tables")
+local Tables = require("extensions.sn_mod_support_apis.ui.simple_menu.Tables")
 local config = Tables.config
 
 -- Local functions and data.
@@ -937,7 +937,7 @@ end
 --[[
 Development notes:
 
-The existing ui functions are in gameoptions.lua.
+The existing ui functions are in gameoptions.ui.
     
     config.input.controlsorder
     - Holds data on various keys

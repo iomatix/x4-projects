@@ -1,10 +1,10 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.simple_menu.Standalone_Menu",function (require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.simple_menu.Standalone_Menu",function (require)
 --[[
     Methods specific to the standalone menu.
 ]]
 
 -- Import config and widget_properties tables.
-local Tables = require("extensions.sn_mod_support_apis.lua.simple_menu.Tables")
+local Tables = require("extensions.sn_mod_support_apis.ui.simple_menu.Tables")
 local widget_properties = Tables.widget_properties
 local widget_defaults   = Tables.widget_defaults
 local config            = Tables.config
@@ -13,7 +13,7 @@ local debugger          = Tables.debugger
 local custom_menu_specs = Tables.custom_menu_specs
 
 -- Import library functions for strings and tables.
-local Lib = require("extensions.sn_mod_support_apis.lua.simple_menu.Library")
+local Lib = require("extensions.sn_mod_support_apis.ui.simple_menu.Library")
 
 
 -- The table holding the standalone menu details.

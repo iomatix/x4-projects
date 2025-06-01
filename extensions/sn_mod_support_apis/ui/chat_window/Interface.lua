@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.chat_window.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.chat_window.Interface",function(require)
 --[[
 Lua interface between md and the chat window.
 Primary goal is to intercept chat text and pass it back to md, with some
@@ -33,9 +33,9 @@ ffi.cdef[[
 ]]
 
 -- Imports.
-local Lib = require("extensions.sn_mod_support_apis.lua.Library")
-local Time = require("extensions.sn_mod_support_apis.lua.time.Interface")
-local T = require("extensions.sn_mod_support_apis.lua.Text")
+local Lib = require("extensions.sn_mod_support_apis.ui.Library")
+local Time = require("extensions.sn_mod_support_apis.ui.time.Interface")
+local T = require("extensions.sn_mod_support_apis.ui.Text")
 
 -- Copy of ego config terms of interest.
 local config = {

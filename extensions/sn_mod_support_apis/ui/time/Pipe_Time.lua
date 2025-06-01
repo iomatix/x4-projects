@@ -1,4 +1,4 @@
-local module = Lua_Loader.define("extensions.sn_mod_support_apis.lua.time.Pipe_Time",function(require)
+local module = Lua_Loader.define("extensions.sn_mod_support_apis.ui.time.Pipe_Time",function(require)
 --[[
 Python pipe interface functions.
 Split into a separate file so that the pipe api can import the general
@@ -7,7 +7,7 @@ an import loop.
 ]]
 
 -- TODO: conditionally include pipes api. For now hardcode.
-local pipes_api = require("extensions.sn_mod_support_apis.lua.time.Interface")
+local pipes_api = require("extensions.sn_mod_support_apis.ui.time.Interface")
 
 -- Table of local functions and data.
 local L = {

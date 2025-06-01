@@ -15,9 +15,9 @@
     </conditions>
     <actions>
       <raise_lua_event name="'Lua_Loader.Load'"
-                       param="'extensions.sn_mod_support_apis.lua.time.Interface'"/>
+                       param="'extensions.sn_mod_support_apis.ui.time.Interface'"/>
       <raise_lua_event name="'Lua_Loader.Load'"
-                       param="'extensions.sn_mod_support_apis.lua.time.Pipe_Time'"/>
+                       param="'extensions.sn_mod_support_apis.ui.time.Pipe_Time'"/>
     </actions>
   </cue>
   

@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.simple_menu.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.simple_menu.Interface",function(require)
 --[[
 Top level of the lua side of the simple menu api.
 Interfaces with MD script commands which will populate the menu and
@@ -13,12 +13,12 @@ Handy ego reference code:
   Around ~2963 are default args for various widgets.
 
 TODO:
-- Check/enforce the widget/row/char limits defined in widget_fullscreen.lua.
+- Check/enforce the widget/row/char limits defined in widget_fullscreen.ui.
 ]]
 
 
 -- Import config and widget_properties tables.
-local Tables = require("extensions.sn_mod_support_apis.lua.simple_menu.Tables")
+local Tables = require("extensions.sn_mod_support_apis.ui.simple_menu.Tables")
 local widget_properties = Tables.widget_properties
 local widget_defaults   = Tables.widget_defaults
 --local config            = Tables.config
@@ -26,13 +26,13 @@ local menu_data         = Tables.menu_data
 local debugger          = Tables.debugger
 
 -- Import library functions for strings and tables.
-local Lib = require("extensions.sn_mod_support_apis.lua.simple_menu.Library")
+local Lib = require("extensions.sn_mod_support_apis.ui.simple_menu.Library")
 
 -- Import the user options menu handler.
-local Options_Menu = require("extensions.sn_mod_support_apis.lua.simple_menu.Options_Menu")
+local Options_Menu = require("extensions.sn_mod_support_apis.ui.simple_menu.Options_Menu")
 
 -- Import the standalone menu handler.
-local Standalone_Menu = require("extensions.sn_mod_support_apis.lua.simple_menu.Standalone_Menu")
+local Standalone_Menu = require("extensions.sn_mod_support_apis.ui.simple_menu.Standalone_Menu")
 
 
 -- Set up any used ffi functions.

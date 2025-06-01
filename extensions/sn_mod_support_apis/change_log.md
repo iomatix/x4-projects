@@ -67,6 +67,12 @@ Change Log for overall api package.
   - Chat api and hotkey menu integration disabled pending further updates.
 * 1.90
   - Fixed interact menu bug introduced in 1.89 that prevented Get_Actions calls.
-* 2.1.X
+* 2.1.0
   - Added base compatibility with UI proteceted mode.
+* 2.1.1
   - Applied fixes for paths within .xmls using `ui` path instead of `lua`, corrected same thing within LUA loader's part.
+  - Paired pipes: replaced the single file field with `write`/`read``_file` to support new pipe structure.
+  - Adjusted `Connect_Pipe` and `Disconnect_Pipe`, and related functionos to handle both pipes.
+  - Improved garbage collection and clarified its behavior.
+  - Enhanced error handling for pip full vs broken states where feasible.
+  - Moved polling registration logic into `Poll_For_Reads` and `Poll_For_Writes` for better encapsulation.

@@ -1,69 +1,56 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe",function(require)
---[[
-Wrapper for loading the winpipe dll file.
+Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", function(require)
+    --[[
+        Wrapper for loading the winpipe DLL, supporting Windows named pipe operations.
+        Dynamically selects the appropriate DLL based on the X4 game version and
+        mod configuration for Python Pipe Server compatibility:
+        - pre-3.3 hotfix 1: winpipe_64_pre3p3hf1.dll (bidirectional pipes).
+        - 3.3 hotfix 1+: winpipe_64.dll (bidirectional by default, updated for "r"/"w" modes).
+        - 2.1.0+ Python Server: Requires winpipe_64.dll with "r"/"w" mode support.
 
-X4 would normally look for dll files only in "ui/core/lualibs/?_64.dll",
-as defined in package.cpath. To load a dll from an extension folder, some
-extra effort is needed.
+        Note: The mod must set `use_unidirectional_pipes` in its configuration
+        (e.g., via a global variable or file) to true for 2.1.0+ compatibility.
+        If unset, defaults to bidirectional mode for backward compatibility.
+    ]]
 
-Using require():
-    "require" on a dll will attempt to call a function named "luaopen_<path>",
-    where the path is the arg given to require.
-    As a result, require() cannot easily be used with complex paths; instead
-    a path search rule needs to be added with the specific directory.
+    -- Verify this is running on Windows.
+    if package and package.config:sub(1,1) == "\\" then
+        -- Log the loading attempt for debugging.
+        DebugError("winpipe.lua: Loading DLL at " .. os.date())
 
-    This is somewhat clumsy due to polluting the cpath rule set.
+        -- Get X4 version to determine base DLL compatibility.
+        local version = GetVersionString()
+        DebugError("winpipe.lua: X4 version string: " .. version)
 
-Using loadlib():
-    This takes the path and name of the entry function, returns the
-    entry (init) function, which needs to be called to set up the library.
-    Note: this doesn't implicitly record the imported module like require()
-    does, so any future loadlib() calls do a fresh import, but that should
-    be fine.
+        -- Check for 3.3 hotfix 1 or later (build code "406216" is pre-hotfix).
+        local is_post_3_3_hf1 = not string.find(version, "406216")
 
-A clean way to support require() is to create a wrapper lua file which
-handles the loadlib() call, but can be found by the require() search paths.
-This is recommended by the lua documentation:
-    https://www.lua.org/pil/8.2.html
+        -- Determine if unidirectional pipes (2.1.0+) are required.
+        -- TODO: Replace with actual config check (e.g., global variable or file).
+        -- For now, assume false unless explicitly set by the mod.
+        local use_unidirectional_pipes = true  -- Set to true for 2.1.0+ testing
+        DebugError("winpipe.lua: Unidirectional pipes enabled: " .. tostring(use_unidirectional_pipes))
 
-This is that wrapper.
-]]
-
--- Ignore the require() style for now.
---package.cpath = package.cpath .. ";.\\extensions\\named_pipes_api\\lualibs\\?_64.dll"
---local winpipe = require("winpipe")
-
--- Check if this is running on Windows.
--- First character in package.config is the separator, which
--- is backslash on windows.
-if package ~= nil and package.config:sub(1,1) == "\\" then
-
-    -- Note: as of x4 3.3 hotfix 1 (beta), the jit and lua dll are changed
-    -- such that the winpipe dll doesn't work between versions.
-    -- (Older winpipe crashes 3.3hf1, while a newer winpipe just doesnt work
-    -- in pre-patch versions.)
-    -- Both winpipe dlls are included for now, but one needs to be selected
-    -- based on the game version.
-
-    -- Note: cannot use jit to check the estimated game version, since it
-    -- cannot be required/imported here.
-    --local jit = require("jit")
-    --DebugError("jit version: "..tostring(jit.version_num))
-
-    -- The GetVersionString() command returns "3.30 (406216)" in the pre-hotfix
-    -- game. Can check for this build code to select which dll to load.
-    -- Newer versions will have a different build code, even the beta.
-    if string.find(GetVersionString(), "406216") then
-        -- <= 3.3 release dll.
-        return package.loadlib(
-            ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_pre3p3hf1.dll", 
-            "luaopen_winpipe")()
+        if is_post_3_3_hf1 and use_unidirectional_pipes then
+            -- Load the updated DLL with "r"/"w" mode support for 2.1.0+.
+            DebugError("winpipe.lua: Loading winpipe_64.dll for 2.1.0+ unidirectional pipes")
+            return package.loadlib(
+                ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64.dll",
+                "luaopen_winpipe")()
+        elseif is_post_3_3_hf1 then
+            -- Load the updated DLL in bidirectional mode for 3.3 hf1+ pre-2.1.0.
+            DebugError("winpipe.lua: Loading winpipe_64_post3p3hf1.dll for 3.3 hf1+ bidirectional pipes")
+            return package.loadlib(
+                ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_post3p3hf1.dll",
+                "luaopen_winpipe")()
+        else
+            -- Load the original DLL for pre-3.3 hotfix 1 (bidirectional).
+            DebugError("winpipe.lua: Loading winpipe_64_pre3p3hf1.dll for pre-3.3 hf1")
+            return package.loadlib(
+                ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_pre3p3hf1.dll",
+                "luaopen_winpipe")()
+        end
     else
-        -- 3.3 hf1 dll.
-        return package.loadlib(
-            ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64.dll", 
-            "luaopen_winpipe")()
+        DebugError("winpipe.lua: Not on Windows, skipping DLL load")
+        return nil
     end
-end
-
 end)

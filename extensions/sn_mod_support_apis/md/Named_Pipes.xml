@@ -53,7 +53,6 @@ Note on timeouts:
 <!--
 TODO:
  - Test through multiple save/reloads.
- - Add Transact function (convenient write+read, lower overhead).
  - Maybe rename lua call signals to prefix with Named_Pipes.
 -->
 <cues>
@@ -66,6 +65,16 @@ TODO:
     <actions>
       <raise_lua_event name="'Lua_Loader.Load'" 
                        param="'extensions.sn_mod_support_apis.ui.named_pipes.Interface'"/>
+    </actions>
+  </cue>
+
+  <cue name="Transact" instantiate="true">
+    <conditions>
+      <event_cue_signalled/>
+    </conditions>
+    <actions>
+      <set_value name="event.param.$command" exact="'Transact'"/>
+      <signal_cue_instantly cue="Access_Handler" param="event.param"/>
     </actions>
   </cue>
 

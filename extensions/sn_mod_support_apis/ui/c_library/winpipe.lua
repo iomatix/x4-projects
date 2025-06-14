@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.c_library.winpipe", function(require)
     --[[
         winpipe.lua - Handles dynamic loading of the appropriate Windows DLL for named pipe support
         in the X4 modding environment. Detects OS, game version, and compatibility requirements.

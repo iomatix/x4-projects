@@ -55,7 +55,11 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.c_library.winpipe", functio
     local success, result = pcall(function()
         local full_path = dll_path
         DebugError("winpipe.lua: Attempting to load DLL from: " .. full_path)
-        return package.loadlib(full_path, "luaopen_winpipe")()
+        local lib = package.loadlib(dll_path, "luaopen_winpipe")
+        if not lib then
+            DebugError("winpipe.lua: Failed to load DLL - loadlib returned nil")
+        end
+        return lib()
     end)
 
     if not success then

@@ -79,3 +79,7 @@ Change Log for overall api package.
   - Updated `winpipe_64.dll` to use `w`/`r` instead of biderectional pipes.
   - Added transaction function to `Named_Pipes.xml`.
   - Updated `Access_Handler` for  transact.
+* 2.1.2 
+  - Fixed culprits in lua files
+  - Improved winpipe.lua, OS detection, fail-safe, clean-up, fallback warnings, better debug logging.
+   

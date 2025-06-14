@@ -1,56 +1,74 @@
 Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", function(require)
     --[[
-        Wrapper for loading the winpipe DLL, supporting Windows named pipe operations.
-        Dynamically selects the appropriate DLL based on the X4 game version and
-        mod configuration for Python Pipe Server compatibility:
-        - pre-3.3 hotfix 1: winpipe_64_pre3p3hf1.dll (bidirectional pipes).
-        - 3.3 hotfix 1+: winpipe_64.dll (bidirectional by default, updated for "r"/"w" modes).
-        - 2.1.0+ Python Server: Requires winpipe_64.dll with "r"/"w" mode support.
+        winpipe.lua - Handles dynamic loading of the appropriate Windows DLL for named pipe support
+        in the X4 modding environment. Detects OS, game version, and compatibility requirements.
 
-        Note: The mod must set `use_unidirectional_pipes` in its configuration
-        (e.g., via a global variable or file) to true for 2.1.0+ compatibility.
-        If unset, defaults to bidirectional mode for backward compatibility.
+        DLL Compatibility Matrix:
+        - Pre-3.3 Hotfix 1       -> winpipe_64_pre3p3hf1.dll (legacy bidirectional)
+        - 3.3 Hotfix 1+          -> winpipe_64_post3p3hf1.dll (bidirectional, updated)
+        - 2.1.0+ Python Pipe API -> winpipe_64.dll (unidirectional pipe mode)
+
+        Unidirectional pipe mode (2.1.0+) must be explicitly enabled in mod config.
+
+        Author: [Your Name / Mod Team]
     ]]
 
-    -- Verify this is running on Windows.
-    if package and package.config:sub(1,1) == "\\" then
-        -- Log the loading attempt for debugging.
-        DebugError("winpipe.lua: Loading DLL at " .. os.date())
+    -- === Enhanced Windows OS Detection ===
+    local function is_windows_platform()
+        local config_sep = package and package.config and package.config:sub(1,1)
+        local env_os = os.getenv("OS") or "unknown"
+        local jit_os = (jit and jit.os) or "unknown"
 
-        -- Get X4 version to determine base DLL compatibility.
-        local version = GetVersionString()
-        DebugError("winpipe.lua: X4 version string: " .. version)
+        DebugError("winpipe.lua: package.config: " .. tostring(package and package.config))
+        DebugError("winpipe.lua: Detected path separator: " .. tostring(config_sep))
+        DebugError("winpipe.lua: OS env var: " .. env_os)
+        DebugError("winpipe.lua: jit.os: " .. jit_os)
 
-        -- Check for 3.3 hotfix 1 or later (build code "406216" is pre-hotfix).
-        local is_post_3_3_hf1 = not string.find(version, "406216")
+        return config_sep == "\\" or env_os == "Windows_NT" or jit_os == "Windows"
+    end
 
-        -- Determine if unidirectional pipes (2.1.0+) are required.
-        -- TODO: Replace with actual config check (e.g., global variable or file).
-        -- For now, assume false unless explicitly set by the mod.
-        local use_unidirectional_pipes = true  -- Set to true for 2.1.0+ testing
-        DebugError("winpipe.lua: Unidirectional pipes enabled: " .. tostring(use_unidirectional_pipes))
-
-        if is_post_3_3_hf1 and use_unidirectional_pipes then
-            -- Load the updated DLL with "r"/"w" mode support for 2.1.0+.
-            DebugError("winpipe.lua: Loading winpipe_64.dll for 2.1.0+ unidirectional pipes")
-            return package.loadlib(
-                ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64.dll",
-                "luaopen_winpipe")()
-        elseif is_post_3_3_hf1 then
-            -- Load the updated DLL in bidirectional mode for 3.3 hf1+ pre-2.1.0.
-            DebugError("winpipe.lua: Loading winpipe_64.dll for 3.3 hf1+ bidirectional pipes")
-            return package.loadlib(
-                ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_post3p3hf1.dll",
-                "luaopen_winpipe")()
-        else
-            -- Load the original DLL for pre-3.3 hotfix 1 (bidirectional).
-            DebugError("winpipe.lua: Loading winpipe_64_pre3p3hf1.dll for pre-3.3 hf1")
-            return package.loadlib(
-                ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_pre3p3hf1.dll",
-                "luaopen_winpipe")()
-        end
-    else
-        DebugError("winpipe.lua: Not on Windows, skipping DLL load")
+    if not is_windows_platform() then
+        DebugError("winpipe.lua: Not detected as Windows environment. DLL loading skipped.")
         return nil
     end
+
+    DebugError("winpipe.lua: Running on Windows. Starting DLL load at " .. os.date())
+
+    -- === Game Version Detection ===
+    local version = GetVersionString() or "unknown"
+    DebugError("winpipe.lua: X4 version string: " .. version)
+
+    local is_post_3_3_hf1 = not string.find(version, "406216")
+    DebugError("winpipe.lua: Is version post 3.3 HF1? " .. tostring(is_post_3_3_hf1))
+
+    -- === Mod Configuration (Unidirectional Pipe Mode) ===
+    -- Replace this with actual config read when available
+    local use_unidirectional_pipes = true -- placeholder for mod config
+    DebugError("winpipe.lua: Unidirectional pipe mode: " .. tostring(use_unidirectional_pipes))
+
+    -- === DLL Selection Logic ===
+    local dll_path
+    if is_post_3_3_hf1 and use_unidirectional_pipes then
+        dll_path = ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64.dll"
+        DebugError("winpipe.lua: Selected DLL: winpipe_64.dll (2.1.0+ unidirectional pipes)")
+    elseif is_post_3_3_hf1 then
+        dll_path = ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_post3p3hf1.dll"
+        DebugError("winpipe.lua: Selected DLL: winpipe_64_post3p3hf1.dll (3.3 HF1+ bidirectional)")
+    else
+        dll_path = ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_pre3p3hf1.dll"
+        DebugError("winpipe.lua: Selected DLL: winpipe_64_pre3p3hf1.dll (pre-3.3 HF1 legacy)")
+    end
+
+    -- === DLL Load Attempt ===
+    local success, result = pcall(function()
+        return package.loadlib(dll_path, "luaopen_winpipe")()
+    end)
+
+    if not success then
+        DebugError("winpipe.lua: ERROR loading DLL from " .. dll_path .. ": " .. tostring(result))
+        return nil
+    end
+
+    DebugError("winpipe.lua: DLL loaded successfully.")
+    return result
 end)

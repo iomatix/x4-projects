@@ -21,8 +21,8 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     local ffi = require("ffi")
     local C = ffi.C
     ffi.cdef[[
-        bool IsGamePaused(void);  -- Check if the game is paused.
-    ]]
+        bool IsGamePaused(void);  
+    ]] -- Check if the game is paused.
 
     -- Load the winpipe DLL for Windows pipe operations.
     local winpipe = require("extensions.sn_mod_support_apis.ui.c_library.winpipe")

@@ -37,6 +37,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
 
     -- Local state and functions returned by this module.
     local L = {
+        pipe_name = "x4_python_host"  -- Base name for pipes
         pipe_path_prefix = "\\\\.\\pipe\\",  -- Standard Windows pipe prefix.
         write_polling_active = false,        -- Tracks write polling status.
         read_polling_active = false,         -- Tracks read polling status.

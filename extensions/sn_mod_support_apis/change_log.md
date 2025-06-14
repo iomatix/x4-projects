@@ -82,4 +82,4 @@ Change Log for overall api package.
 * 2.1.2 
   - Fixed culprits in lua files
   - Improved winpipe.lua, OS detection, fail-safe, clean-up, fallback warnings, better debug logging.
-   
+  - TODO: Fixed communication with 2.1.0 Pipe Server

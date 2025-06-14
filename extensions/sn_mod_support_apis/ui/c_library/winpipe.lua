@@ -26,7 +26,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.c_library.winpipe", functio
         return nil
     end
 
-    DebugError("winpipe.lua: Running on Windows. Starting DLL load at " .. GetTime())
+    DebugError("winpipe.lua: Running on Windows. Starting DLL load at " .. tostring(GetTime()))
 
     -- === Game Version Detection ===
     local version = GetVersionString() or "unknown"

@@ -43,19 +43,21 @@ Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", functi
     -- === DLL Selection Logic ===
     local dll_path
     if is_post_3_3_hf1 and use_unidirectional_pipes then
-        dll_path = ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64.dll"
+        dll_path = "extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64.dll"
         DebugError("winpipe.lua: Selected DLL: winpipe_64.dll (2.1.0+ unidirectional pipes)")
     elseif is_post_3_3_hf1 then
-        dll_path = ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_post3p3hf1.dll"
+        dll_path = "extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_post3p3hf1.dll"
         DebugError("winpipe.lua: Selected DLL: winpipe_64_post3p3hf1.dll (3.3 HF1+ bidirectional)")
     else
-        dll_path = ".\\extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_pre3p3hf1.dll"
+        dll_path = "extensions\\sn_mod_support_apis\\ui\\c_library\\winpipe_64_pre3p3hf1.dll"
         DebugError("winpipe.lua: Selected DLL: winpipe_64_pre3p3hf1.dll (pre-3.3 HF1 legacy)")
     end
 
     -- === DLL Load Attempt ===
     local success, result = pcall(function()
-        return package.loadlib(dll_path, "luaopen_winpipe")()
+        local full_path = dll_path
+        DebugError("winpipe.lua: Attempting to load DLL from: " .. full_path)
+        return package.loadlib(full_path, "luaopen_winpipe")()
     end)
 
     if not success then

@@ -1,69 +1,82 @@
-
 Win_Pipe_API
 ------------
 
-Lua plugin which offers support for windows named pipe clients.
+**Lua plugin for Windows named pipe clients (Windows only)**  
+Provides non-blocking and blocking support for named pipe I/O from Lua 5.1.
 
-This dll project is originally adapted from winapi for lua, and heavily
-modified to cut out unused parts (nearly all) of that api.
+This DLL plugin is derived from the legacy `winapi` plugin and heavily modified. It **only implements named pipe client access** (`\\.\pipe\...`) for use within the X4 game engine scripting environment (which uses Lua 5.1).
 
-Notes on compilation:
-* This should always be compiled in 64-bit release mode.
-* Various compilation/linking options are done in the VS project properties.
-* The output file is named winpipe.dll and placed at the default VS
-  output folder.
+---
 
+Compilation Notes
+-----------------
 
-Dependencies:
-1) Lua 5.1 headers.
-   https://www.lua.org/source/5.1/
-   They will be placed in: Win_Pipe_API/lua
+💡 This plugin **must be compiled in 64-bit Release mode**, and linked against **Lua 5.1's 64-bit DLL**.
 
-2) Lua 5.1 lib file, matching the X4 shipped dll.
-   This will be placed in Win_Pipe_API/lua/lua51_64.lib.
+### Prerequisites:
 
-   For safety, this may be generated from the dll shipped with X4:
-   - Grab the lua51_64.dll from the x4 folder
-   - Using VS2017, open the developer command prompt in x64 mode.
-     On Win7 this required adding a command line parameter:
-     %comspec% /k "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\VsDevCmd.bat" -arch=amd64
-   - Convert this dll into a lib file using bat file from:
+1. **Lua 5.1 headers**
+   - Download from: https://www.lua.org/source/5.1/
+   - Place in: `Win_Pipe_API/lua/`
+
+2. **Lua 5.1 import library (`lua51_64.lib`)**
+   - Must match the `lua51_64.dll` shipped with X4.
+   - If not available, you can generate it from the DLL:
+
+     ```
+     dumpbin /EXPORTS lua51_64.dll > lua.exports
+     editdef lua.def from exports
+     lib /def:lua.def /machine:x64 /out:lua51_64.lib
+     ```
+
+   - Alternatively, follow this StackOverflow guide:  
      https://stackoverflow.com/questions/9946322/how-to-generate-an-import-library-lib-file-from-a-dll
-   
-   Note: X4 patch 3.3 hf1 beta modified the lua dll. Supporting both pre-patch and post-patch dlls is done manually, with the current setup using the latest dll->lib, but the older one is available under an alternate name (needs manual lib rename to compile it).
 
-     
+---
 
-History of moving from winapi batch file to VS IDE compilation:
+Visual Studio Build Configuration
+---------------------------------
 
-  The original source used a bat file build script to compile and link,
-  using largely default flags. Below is the key piece of code (minus some paths):
+Settings known to work for X4 (Lua 5.1, 64-bit):
 
-    set CFLAGS= /O1 /DPSAPI_VERSION=1  /I"%LUA_DIR%\include"
-    cl /nologo -c %CFLAGS% winapi.c
-    cl /nologo -c %CFLAGS% wutils.c
-    link /nologo winapi.obj wutils.obj /EXPORT:luaopen_winapi  /LIBPATH:"%LUA_DIR%" msvcrt.lib kernel32.lib user32.lib psapi.lib advapi32.lib shell32.lib  Mpr.lib lua51_64.lib  /DLL /OUT:winapi.dll
+- Configuration: **Release/x64**
+- Character Set: **Not Set**
+- Disable precompiled headers
+- Additional Include Directories: `./lua/`
+- Additional Linker Inputs:
+  - `kernel32.lib`
+  - `user32.lib`
+  - `lua51_64.lib`
+- C/C++ → Preprocessor Definitions: Add `/DPSAPI_VERSION=1`
+- Linker → Command Line: Add `/EXPORT:luaopen_winpipe`
+- Warning Level: set to `/W1` (to match original batch scripts)
+- Security Check: `/sdl-` (disable)
 
-  The above is run in the 64-bit version of the developer command prompt.
+---
 
-  When compiling in VS IDE, by default many more flags are added.
-  Here are some notes on changes made from the default VS project while
-  trying to get the dll to compile correctly (eg. load into x4 and have
-  its functions work, which takes more than just getting a dll):
+Functionality
+-------------
 
-  * Project set for Release/x64.
-  * Disabled precompiled headers.
-  * Added the lua headers on additional include paths.
-  * Added extra libs to the linker references.
-  * Turned off SDL checks (complaints about depricated functions).
-  * At this point the dll compiles, but when loaded into the game its
-    open_pipe function returns nil.
-  * Added /DPSAPI_VERSION=1 to cl command line options.
-    There was no obvious way to do this from the ui list of defines.
-  * Added /EXPORT:luaopen_winapi to the linker command line options.
-  * Adjusted warnings from W3 down to W1, the cl default.
-    Aim is to get a closer match to the warnings from the bat file.
-  * Changed character set from unicode to undefined.
-  * At this point, there is a close match in the compile output log between
-    the vs ide and the dev command prompt batch file.
-  * The resulting dll loads into x4 correctly and passes initial tests.
+This module exports `winpipe.open(pipe_path, mode)` in Lua.
+
+- Returns a file-like object supporting:
+  - `:read([maxbytes])`
+  - `:write(data)`
+  - `:close()`
+
+It supports:
+- Overlapped (non-blocking) I/O via `FILE_FLAG_OVERLAPPED`
+- Error handling with translated Windows error messages
+- Safe use in sandboxed Lua 5.1 environments
+
+---
+
+Usage in Lua 5.1:
+
+```lua
+local pipe = require("winpipe")
+
+local client = pipe.open("\\\\.\\pipe\\my_pipe", "rw")
+client:write("hello")
+local msg = client:read()
+client:close()

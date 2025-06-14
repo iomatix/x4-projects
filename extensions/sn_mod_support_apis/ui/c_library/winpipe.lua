@@ -10,21 +10,15 @@ Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", functi
 
         Unidirectional pipe mode (2.1.0+) must be explicitly enabled in mod config.
 
-        Author: [Your Name / Mod Team]
+        Author: X4 Modding Community
+        License: MIT
     ]]
 
     -- === Enhanced Windows OS Detection ===
     local function is_windows_platform()
-        local config_sep = package and package.config and package.config:sub(1,1)
-        local env_os = os.getenv("OS") or "unknown"
-        local jit_os = (jit and jit.os) or "unknown"
-
-        DebugError("winpipe.lua: package.config: " .. tostring(package and package.config))
+        local config_sep = package.config and package.config:sub(1,1) or "/"
         DebugError("winpipe.lua: Detected path separator: " .. tostring(config_sep))
-        DebugError("winpipe.lua: OS env var: " .. env_os)
-        DebugError("winpipe.lua: jit.os: " .. jit_os)
-
-        return config_sep == "\\" or env_os == "Windows_NT" or jit_os == "Windows"
+        return config_sep == "\\"
     end
 
     if not is_windows_platform() then

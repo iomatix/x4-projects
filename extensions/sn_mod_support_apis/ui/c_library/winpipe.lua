@@ -31,12 +31,10 @@ Lua_Loader.define("extensions.sn_mod_support_apis.lua.c_library.winpipe", functi
     -- === Game Version Detection ===
     local version = GetVersionString() or "unknown"
     DebugError("winpipe.lua: X4 version string: " .. version)
-
     local is_post_3_3_hf1 = not string.find(version, "406216")
     DebugError("winpipe.lua: Is version post 3.3 HF1? " .. tostring(is_post_3_3_hf1))
 
     -- === Mod Configuration (Unidirectional Pipe Mode) ===
-    -- Replace this with actual config read when available
     local use_unidirectional_pipes = true -- placeholder for mod config
     DebugError("winpipe.lua: Unidirectional pipe mode: " .. tostring(use_unidirectional_pipes))
 

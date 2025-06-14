@@ -167,7 +167,10 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         L.Declare_Pipe(pipe_name)
         local p = pipes[pipe_name]
         if not p.write_file or not p.read_file then
-            if not winpipe then error("winpipe not loaded") end
+        if not winpipe then
+            DebugError("Pipes.lua: winpipe DLL not loaded - check winpipe.lua")
+            return false
+        end
 
             -- Open write pipe (client-to-server).
             p.write_file = winpipe.open_pipe(L.pipe_path_prefix .. pipe_name .. "_in", "w")

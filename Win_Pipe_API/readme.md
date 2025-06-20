@@ -21,13 +21,49 @@ Compilation Notes
 
 2. **Lua 5.1 import library (`lua51_64.lib`)**
    - Must match the `lua51_64.dll` shipped with X4.
-   - If not available, you can generate it from the DLL:
+   - If not available, you can generate it from the DLL via Visual Studio Developer Command Prompt console:
 
      ```
      dumpbin /EXPORTS lua51_64.dll > lua.exports
      editdef lua.def from exports
      lib /def:lua.def /machine:x64 /out:lua51_64.lib
      ```
+
+   - Recommended: Generate `lua51.def` and `lua51_64.lib` Using PowerShell:
+
+        Use the **Visual Studio Developer Command **Prompt:
+        ```sh
+        dumpbin /EXPORTS lua51_64.dll > lua.exports
+        ```
+        **PowerShell script**:
+        1) Read your raw export dump:
+        ```$raw = Get-Content lua.exports```
+
+        2) Build up an array of clean lines:
+        ```
+        $lines = @(
+            'LIBRARY lua51_64.dll'
+            'EXPORTS'
+            ''   # <— this blank line is _crucial_ so the first symbol isn’t stuck on the EXPORTS line
+        )
+        ```
+
+        3) Append only the lua* names, indented:
+        ```
+        $raw |
+          Select-String -Pattern '^\s*\d+\s+\w+\s+\w+\s+([^\s]+)' |
+          Where-Object { $_.Matches[0].Groups[1].Value -match '^lua' } |
+          ForEach-Object { $lines += "    " + $_.Matches[0].Groups[1].Value }
+        ```
+
+        4) Write out as ASCII (no BOM) with CRLF line endings:
+        ```$lines | Set-Content lua51.def -Encoding Ascii```
+
+
+        Again use the **Visual Studio Developer Command** Prompt:
+        ```sh
+        lib /def:lua51.def /machine:x64 /out:lua51_64.lib
+        ```
 
    - Alternatively, follow this StackOverflow guide:  
      https://stackoverflow.com/questions/9946322/how-to-generate-an-import-library-lib-file-from-a-dll
@@ -80,3 +116,4 @@ local client = pipe.open("\\\\.\\pipe\\my_pipe", "rw")
 client:write("hello")
 local msg = client:read()
 client:close()
+```

@@ -26,6 +26,16 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
 
     -- Load the winpipe DLL for Windows pipe operations.
     local winpipe = require("extensions.sn_mod_support_apis.ui.c_library.winpipe")
+    if winpipe and winpipe.open_pipe then
+        if debug.print_to_log then 
+        DebugError("[INFO] winpipe.open_pipe is loaded.") 
+        end
+    else
+        if debug.print_to_log then 
+        DebugError("[ERROR] winpipe.open_pipe is NIL!") 
+        end
+    end
+
     -- Note: If winpipe is nil (e.g., non-Windows), pipes are treated as disconnected.
 
     -- Load supporting libraries.

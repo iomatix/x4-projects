@@ -225,11 +225,10 @@ static const struct luaL_Reg pipefile_methods[] = {
 //------------------------------------
 // Global functions for winpipe module
 //------------------------------------
-static const struct luaL_Reg winpipe_funs[] = {
-	{"open", winpipe_open},
-	{NULL, NULL}
+static const luaL_Reg winpipe_funs[] = {
+	{ "open_pipe", winpipe_open  },
+	{ NULL, NULL }
 };
-
 #ifdef __cplusplus
 extern "C" {
 #endif

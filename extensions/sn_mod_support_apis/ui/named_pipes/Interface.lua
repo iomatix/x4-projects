@@ -1,6 +1,8 @@
-Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Interface",function(require)
+Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Interface", function(require)
 --[[
-MD to Lua Pipe API
+MD → Lua Pipe API
+       Registers a command handler, clears stale args, signals reload,
+       and primes the named-pipe connection for both read and write. 
 
 Lua support for communicating through windows named pipes with
 an external process, with the help of the winpipe api dll, which
@@ -78,10 +80,7 @@ writing and reading functions are shown here.
 -- Set up any used ffi functions.
 local ffi = require("ffi")
 local C = ffi.C
-ffi.cdef[[
-    typedef uint64_t UniverseID;
-    UniverseID GetPlayerID(void);   
-]]
+ffi.cdef[[ typedef uint64_t UniverseID; UniverseID GetPlayerID(void); ]]
 
 -- Import lib functions and pipe management.
 local Lib = require("extensions.sn_mod_support_apis.ui.named_pipes.Library")
@@ -98,19 +97,30 @@ local L = {
 }
 
 
--- Handle initial setup.
-local function Init()
-    -- Generic command handler.
-    RegisterEvent("pipeProcessCommand", L.Process_Command)
-    
-    -- Cache the player component id.
-    L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
-                
-    -- Clear any old command args.
-    SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
 
-    -- Signal to MD that the lua has reloaded.
-    Lib.Raise_Signal('reloaded')
+-- Called once on load: registers event handlers, clears state, and
+-- performs an initial probe to open read+write handles on the pipe.
+local function Init()
+  -- 1) Listen for Process_Command events from MD.
+  RegisterEvent("pipeProcessCommand", L.Process_Command)
+
+  -- 2) Compute and cache the player-specific blackboard key.
+  L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
+
+  -- 3) Clear any leftover arguments in the player blackboard.
+  SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
+
+  -- 4) Notify the Python server that the Lua interface is reloaded.
+  Lib.Raise_Signal('reloaded')
+
+  -- 5) Enqueue a dummy Read to force the client to open the read handle.
+  Pipes.Schedule_Read("x4_python_host", "init_probe", false)
+
+  -- 6) Enqueue a dummy Write to force the client to open the write handle.
+  Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
+
+  -- 7) Explicitly attempt Connect_Pipe to expedite the handshake.
+  pcall(Pipes.Connect_Pipe, "x4_python_host")
 end
 
 
@@ -204,6 +214,8 @@ function L.Process_Command()
 end
 
 
--- On require(), just return the Pipes functions to other lua modules.
-return Pipes, Init
+  -- Immediately initialize so the interface starts up on require()
+  Init()
+
+  return Pipes, Init
 end)

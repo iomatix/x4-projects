@@ -14,7 +14,7 @@
 
     <file name="ui/c_library/winpipe.lua" />
 
-    <file name="ui/named_pipes/library.lua" />
+    <file name="ui/named_pipes/Library.lua" />
     <file name="ui/named_pipes/Pipes.lua" />
     <file name="ui/named_pipes/Interface.lua" />
 

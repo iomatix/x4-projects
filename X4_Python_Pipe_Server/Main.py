@@ -1,71 +1,79 @@
 import sys
 import json
 import argparse
-import traceback
 import logging
+import traceback
 from pathlib import Path
 from importlib import machinery
 import win32api
 import winerror
 from multiprocessing import Process, Event
 import inspect
+import threading
 from typing import List, Optional, Dict, Callable
+
 from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
 
 # Main.py - Core
 # Manages the server lifecycle, including pipe setup, module loading, and process management.
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
 # Version and constants
-VERSION = '2.1.0'
+VERSION = '2.1.2'
 PIPE_NAME = 'x4_python_host'
+
+# Configure root logger
+log_format = '%(asctime)s %(levelname)s [%(threadName)s] %(message)s'
+logging.basicConfig(level=logging.INFO, format=log_format)
+logger = logging.getLogger(__name__)
+
 DEVELOPER_MODE = False  # Extra exception details for developers
 
-# Permissions storage
-permissions: Optional[Dict[str, bool]] = None
+# Determine where permissions.json lives
 if getattr(sys, 'frozen', False):
     permissions_path = Path(sys.executable).parent / 'permissions.json'
 else:
     permissions_path = Path(__file__).resolve().parent / 'permissions.json'
 
+permissions: Optional[Dict[str, bool]] = None
+
+
 class Server_Process(Process):
     """A process wrapper for running module main functions with graceful shutdown."""
     def __init__(self, target: Callable, name: Optional[str] = None):
+        super().__init__(target=self.run_with_stop, name=name, daemon=True)
         self.stop_event = Event()
-        self.target = target
-        super().__init__(target=self.run_with_stop, name=name)
-        self.daemon = True
+        self._target_fn = target
 
     def run_with_stop(self) -> None:
-        """Execute the target function, passing stop_event if supported."""
-        sig = inspect.signature(self.target)
+        sig = inspect.signature(self._target_fn)
         if len(sig.parameters) >= 1:
-            self.target(self.stop_event)
+            logger.debug(f"{self.name}: calling target with stop_event")
+            self._target_fn(self.stop_event)
         else:
-            self.target()
+            logger.debug(f"{self.name}: calling target without stop_event")
+            self._target_fn()
 
     def Close(self) -> None:
-        """Signal the process to stop gracefully."""
+        logger.info(f"{self.name}: signaling graceful shutdown")
         self.stop_event.set()
 
     def Join(self, timeout: float = 5.0) -> None:
-        """Wait for the process to terminate, with a timeout and forced termination if needed."""
         self.join(timeout)
         if self.is_alive():
-            logging.warning(f"Process {self.name} did not terminate in time; terminating forcefully")
+            logger.warning(f"{self.name}: did not terminate in time; terminating forcefully")
             self.terminate()
+
 
 def setup_paths() -> None:
     """Set up sys.path for package inclusion."""
     if not getattr(sys, 'frozen', False):
-            home_path = Path(__file__).resolve().parents[1]
-            if str(home_path) not in sys.path:
-                sys.path.append(str(home_path))
+        home_path = Path(__file__).resolve().parents[1]
+        if str(home_path) not in sys.path:
+            sys.path.append(str(home_path))
+            logger.debug(f"Added {home_path!r} to sys.path")
+
 
 def parse_args() -> argparse.Namespace:
-    """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description='Host pipe server for X4 interprocess communication.'
     )
@@ -75,151 +83,198 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument('-m', '--module', help='Module path (test mode).')
     parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output.')
     parser.add_argument('--no-restart', action='store_true', help='Disable auto-restart.')
+
     args = parser.parse_args()
-    
-    if args.test and (not args.x4_path or not args.module):
-        logging.error("Test mode requires --x4-path and --module.")
-        sys.exit(1)
+
+    # Set log level
+    if args.verbose:
+        logger.setLevel(logging.DEBUG)
+        logger.debug("Verbose mode enabled")
+
+    # Validate test-mode arguments
+    if args.test:
+        if not args.x4_path or not args.module:
+            logger.error("Test mode requires both --x4-path and --module")
+            sys.exit(1)
+        logger.info(f"Test mode ON: X4 root = {args.x4_path}, module = {args.module}")
+
     return args
+
+
+def write_server_info(args: argparse.Namespace) -> None:
+    """Log server startup information."""
+    logger.info(f"Starting X4 Python Pipe Server v{VERSION}")
+    logger.info(f"Running in {'frozen' if getattr(sys, 'frozen', False) else 'script'} mode")
+    logger.info(f"Permissions file: {permissions_path}")
+    if args.test:
+        x4exe = Path(args.x4_path) / "X4.exe"
+        if x4exe.exists():
+            logger.info(f"Found X4.exe for test: {x4exe}")
+        else:
+            logger.warning(f"X4.exe not found at expected test path: {x4exe}")
+
 
 def load_permissions(args: argparse.Namespace) -> None:
     """Load or generate the permissions file."""
     global permissions, permissions_path
     if args.permissions_path:
         permissions_path = Path(args.permissions_path).resolve()
+        logger.debug(f"Overriding permissions path: {permissions_path}")
+
     if permissions_path.exists():
         try:
-            with permissions_path.open('r') as f:
-                permissions = json.load(f)
-            logging.info(f"Loaded permissions from {permissions_path}")
+            permissions = json.loads(permissions_path.read_text())
+            logger.info(f"Loaded permissions from {permissions_path}")
         except json.JSONDecodeError as e:
-            logging.error(f"Failed to parse permissions: {e}")
+            logger.error(f"Failed to parse permissions.json: {e}")
+            permissions = None
+
     if not permissions:
         permissions = {
             'instructions': 'Set allowed extension IDs or folder names. IDs take precedence.',
             'ws_2042901274': True  # Modding API ID
         }
-        with permissions_path.open('w') as f:
-            json.dump(permissions, f, indent=2)
-        logging.info(f"Created default permissions at {permissions_path}")
+        permissions_path.write_text(json.dumps(permissions, indent=2))
+        logger.info(f"Initialized default permissions at {permissions_path}")
+
 
 def check_permission(x4_path: Path, module_path: Path) -> bool:
     """Verify module permission using extension ID or folder name."""
     try:
         if not module_path.as_posix().startswith('extensions/'):
             raise ValueError("Module not in extensions directory")
+
         ext_dir = x4_path / module_path.parents[-3]
-        folder_name = ext_dir.name
-        content = (ext_dir / 'content.xml').read_text()
+        content_xml = ext_dir / 'content.xml'
+        logger.debug(f"Checking permissions in {content_xml}")
+        content = content_xml.read_text()
         ext_id = content.split('id="')[1].split('"')[0]
-        
-        # Check by ID first
-        if ext_id in permissions and permissions[ext_id]:
+        folder = ext_dir.name
+
+        if permissions.get(ext_id):
+            logger.debug(f"Permission granted by ID {ext_id}")
             return True
-        # Fallback to folder name
-        elif folder_name in permissions and permissions[folder_name]:
+        if permissions.get(folder):
+            logger.debug(f"Permission granted by folder name {folder}")
             return True
-        logging.warning(f"Module {module_path} (ID: {ext_id}, Folder: {folder_name}) lacks permission")
+
+        logger.warning(f"Permission denied for module {module_path} (ID={ext_id}, folder={folder})")
         return False
-    except (FileNotFoundError, IndexError, ValueError) as e:
-        logging.error(f"Permission check failed for {module_path}: {e}")
+
+    except Exception as e:
+        logger.error(f"Permission check error for {module_path}: {e}")
         return False
+
 
 def import_module(path: Path):
     """Import a Python module from the given path."""
     try:
+        logger.debug(f"Loading module from {path}")
         module_name = f"user_module_{path.name.replace(' ', '_')}"
         module = machinery.SourceFileLoader(module_name, str(path)).load_module()
-        logging.info(f"Imported module {path}")
+        logger.info(f"Imported module {path}")
         return module
-    except ImportError as e:
-        logging.error(f"Import failed for {path}: {e}")
+
+    except Exception as e:
+        logger.error(f"Failed to import module {path}: {e}")
         if DEVELOPER_MODE:
-            logging.error(traceback.format_exc())
+            logger.debug(traceback.format_exc())
         return None
+
 
 def run_server(args: argparse.Namespace) -> None:
     """Run the main server loop, managing module processes."""
     processes: List[Server_Process] = []
-    module_relpaths: List[Path] = []
+    seen_modules: List[Path] = []
     shutdown = False
 
     while not shutdown:
         pipe = None
         try:
+            logger.info("Creating Pipe_Server...")
             pipe = Pipe_Server(PIPE_NAME, verbose=args.verbose)
             if args.test:
-                threading.Thread(target=pipe_client_test, args=(args,)).start()
+                logger.debug("Spawning pipe_client_test thread")
+                threading.Thread(target=pipe_client_test, args=(args,), daemon=True).start()
+
+            logger.info("Connecting to pipe...")
             pipe.Connect()
-            x4_path: Optional[Path] = None
+            logger.info("Pipe connected, awaiting messages")
 
+            x4_root: Optional[Path] = None
+
+            # Message loop
             while True:
-                message = pipe.Read()
-                logging.info(f"Received: {message}")
+                msg = pipe.Read()
+                logger.debug(f"Received raw message: {msg!r}")
 
-                if message == 'ping':
+                if msg == 'ping':
+                    logger.debug("Ping received")
                     continue
-                elif message == 'restart':
+                if msg == 'restart':
+                    logger.info("Restart command received")
                     break
-                elif message.startswith('package.path:'):
-                    paths = [Path(p) for p in message[13:].split(';')]
-                    for p in paths:
-                        test_path = p
-                        while test_path.parents:
-                            if test_path.parent.name == 'lua':
-                                x4_path = test_path.parent
+
+                if msg.startswith('package.path:'):
+                    raw = msg[len('package.path:'):]
+                    segments = [seg for seg in raw.split(';') if seg]
+                    logger.debug(f"Parsed package.path segments: {segments!r}")
+
+                    # find x4 root by locating the 'lua' or 'ui' parent
+                    for seg in segments:
+                        p = Path(seg)
+                        for parent in [p] + list(p.parents):
+                            if parent.name.lower() in ('lua', 'ui'):
+                                x4_root = parent.parent
+                                logger.info(f"Determined X4 root: {x4_root}")
                                 break
-                            test_path = test_path.parent
-                elif message.startswith('modules:') and x4_path:
-                    module_paths = [Path(p) for p in message[8:].split(';')[:-1]]
-                    for mp in module_paths:
-                        if mp in module_relpaths:
+                        if x4_root:
+                            break
+                    if not x4_root:
+                        logger.warning("Failed to determine X4 root from package.path")
+
+                elif msg.startswith('modules:') and x4_root:
+                    raw = msg[len('modules:'):]
+                    rels = [r for r in raw.split(';') if r]
+                    logger.info(f"Modules announced: {rels}")
+                    for rel in rels:
+                        rel_path = Path(rel)
+                        if rel_path in seen_modules:
+                            logger.debug(f"Skipping already-handled module: {rel_path}")
                             continue
-                        full_path = x4_path / mp
-                        if not check_permission(x4_path, mp):
+
+                        full = x4_root / rel_path
+                        logger.debug(f"Resolved module path: {full}")
+                        if not full.exists():
+                            logger.error(f"Module file not found: {full}")
                             continue
-                        module_relpaths.append(mp)
-                        module = import_module(full_path)
-                        if module and hasattr(module, 'main'):
-                            main_func = module.main
-                            process_name = f"Process_{mp.as_posix().replace('/', '_')}"
-                            if len(inspect.signature(main_func).parameters) >= 1:
-                                process = Server_Process(target=main_func, name=process_name)
-                                logging.info(f"Module {mp} supports graceful shutdown")
-                            else:
-                                def wrapper(stop_event: Event) -> None:
-                                    main_func()
-                                process = Server_Process(target=wrapper, name=process_name)
-                                logging.warning(f"Module {mp} does not support graceful shutdown")
-                            processes.append(process)
-                            process.start()
+
+                        if not check_permission(x4_root, rel_path):
+                            continue
+
+                        seen_modules.append(rel_path)
+                        mod = import_module(full)
+                        if not mod or not hasattr(mod, 'main'):
+                            logger.warning(f"No `.main()` in module {rel_path}")
+                            continue
+
+                        main_fn = mod.main
+                        proc_name = f"Proc_{rel_path.as_posix().replace('/', '_')}"
+                        proc = Server_Process(target=main_fn, name=proc_name)
+                        processes.append(proc)
+                        proc.start()
+                        logger.info(f"Started process {proc_name} for module {rel_path}")
 
         except (win32api.error, Client_Garbage_Collected) as e:
-            if args.test:
-                shutdown = True
-                logging.info("Test mode completed")
-            elif isinstance(e, Client_Garbage_Collected):
-                logging.info("Client garbage collected")
-            elif e.funcname == 'CreateNamedPipe':
-                logging.error("Pipe creation failed; another instance running?")
-                shutdown = True
-            elif e.winerror == winerror.ERROR_BROKEN_PIPE:
-                logging.info("Client disconnected")
-            else:
-                logging.error(f"Win32 error: {e.winerror} in {e.funcname}: {e.strerror}")
-                shutdown = True
-            if shutdown:
-                input("Press Enter to exit...")
-            elif not args.no_restart:
-                logging.info("Restarting server")
-            else:
-                shutdown = True
+            shutdown = handle_win32_exception(e, args)
         except KeyboardInterrupt:
-            logging.info("Interrupted by user")
+            logger.info("KeyboardInterrupt received, shutting down")
             shutdown = True
         except Exception as e:
-            logging.error(f"Unexpected error: {e}")
-            raise
+            logger.error(f"Unhandled exception in server loop: {e}")
+            if DEVELOPER_MODE:
+                logger.debug(traceback.format_exc())
+            shutdown = True
         finally:
             if pipe:
                 try:
@@ -232,20 +287,60 @@ def run_server(args: argparse.Namespace) -> None:
                 for p in processes:
                     p.Join()
 
+
+def handle_win32_exception(e, args) -> bool:
+    """Centralize logging & decision for win32api.error and Client_Garbage_Collected."""
+    if args.test:
+        logger.info("Test mode complete, exiting")
+        return True
+
+    if isinstance(e, Client_Garbage_Collected):
+        logger.info("Client garbage collected, restarting pipe")
+        return False
+
+    if getattr(e, 'funcname', None) == 'CreateNamedPipe':
+        logger.error("Pipe creation failed (another instance running?)")
+        return True
+
+    if getattr(e, 'winerror', None) == winerror.ERROR_BROKEN_PIPE:
+        logger.info("Broken pipe (client disconnected), waiting for reconnect")
+        return False
+
+    logger.error(f"Win32 error {e.winerror} in {e.funcname}: {e.strerror}")
+    return True
+
+
 def pipe_client_test(args: argparse.Namespace) -> None:
     """Simulate X4 client for testing."""
+    from pathlib import Path
+
+    x4_root = Path(args.x4_path)
+    if not x4_root.exists():
+        raise RuntimeError(f"Invalid X4 path for test: {x4_root}")
+
+    segments = [
+        ".\\?.lua",
+        str(x4_root / "lua" / "?.lua"),
+        str(x4_root / "lua" / "?" / "init.lua"),
+        str(x4_root / "ui"  / "?.lua"),
+        str(x4_root / "ui"  / "?" / "init.lua"),
+    ]
+    package_path = ';'.join(segments) + ';'
+    logger.debug(f"pipe_client_test sending package.path: {package_path!r}")
+
     pipe = Pipe_Client(PIPE_NAME)
-    package_path = f".\\?.lua;{args.x4_path}\\lua\\?.lua;{args.x4_path}\\lua\\?\\init.lua;"
     pipe.Write(f"package.path:{package_path}")
-    pipe.Write(f"modules:{args.module.as_posix()};")
+    pipe.Write(f"modules:{Path(args.module).as_posix()};")
     pipe.Read()
 
+
 def main() -> None:
-    """Entry point for the server."""
     setup_paths()
     args = parse_args()
+    write_server_info(args)
     load_permissions(args)
     run_server(args)
+
 
 if __name__ == '__main__':
     main()

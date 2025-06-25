@@ -3,7 +3,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Library",functi
 -- be modified.
 local L = {
     debug = {
-        print_to_log = false,
+        print_to_log = true,  -- Print debug messages to the log.
     },
 }
 

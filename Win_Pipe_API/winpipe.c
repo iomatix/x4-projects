@@ -2,7 +2,7 @@
  * Lua Named Pipe Module with Asynchronous I/O (Windows)
  * ------------------------------------------------------
  * This module implements Lua bindings to Windows named pipes using the WinAPI
- * with support for asynchronous I/O via OVERLAPPED structures.
+ * with full support for asynchronous (non-blocking) I/O via OVERLAPPED structures.
  *
  * Author: Mateusz "iomatix" Wypchlak
  * Inspired by professional system-level practices.
@@ -12,240 +12,239 @@
 #include <windows.h>
 #include <lua.h>
 #include <lauxlib.h>
-#include <lualib.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define FILE_BUFFER_SIZE 2048
 #define FILE_MT "WinPipe.File"
 
-/*
- * Export macro for Windows builds.
- * For 64-bit builds, name mangling is not an issue, but we still wrap exported
- * function in an extern "C" block to ensure the correct unmangled name if compiled as C++.
- */
-#ifdef _WIN32
-    #define EXPORT __declspec(dllexport)
+ // Lua compatibility macros for Lua 5.1 and 5.2+
+#if LUA_VERSION_NUM == 501
+#define lua_objlen(L, idx)    (luaL_checklstring(L, idx, NULL), lua_strlen(L, idx))
+#define luaL_setfuncs(L, f, n) luaL_register(L, NULL, f)
+#define luaL_newlib(L, f)     luaL_register(L, "winpipe", f)
 #else
-    #define EXPORT
+#define lua_objlen lua_rawlen
 #endif
 
-// Lua 5.1 vs. 5.2+ compatibility
-#if LUA_VERSION_NUM == 501
-    #define lua_objlen(L, idx)    (luaL_checklstring(L, idx, NULL), lua_strlen(L, idx))
-    #define luaL_setfuncs(L, f, n) luaL_register(L, NULL, f)
-    #define luaL_newlib(L, f)     luaL_register(L, "winpipe", f)
+#ifdef _WIN32
+#define EXPORT __declspec(dllexport)
 #else
-    #define lua_objlen lua_rawlen
+#define EXPORT
 #endif
 
 //------------------------------------
 // Utility: Push Windows last error as Lua error
 //------------------------------------
 static int push_last_error(lua_State* L) {
-    DWORD err = GetLastError();
-    char buf[512];
-    FormatMessageA(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
-                   NULL, err, 0, buf, sizeof(buf), NULL);
-    lua_pushnil(L);
-    lua_pushstring(L, buf);
-    return 2;
+	DWORD err = GetLastError();
+	LPSTR buf = NULL;
+	FormatMessageA(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL, err, 0, (LPSTR)&buf, 0, NULL
+	);
+
+	lua_pushnil(L);
+	lua_pushfstring(L, "WinAPI Error %lu: %s", err, buf ? buf : "Unknown error");
+	if (buf) LocalFree(buf);
+	return 2;
 }
 
 //------------------------------------
-// File struct representing a pipe endpoint
+// PipeFile: Represents one side of the pipe
 //------------------------------------
 typedef struct {
-    HANDLE handle;    // Read or write handle
-    BOOL is_read;     // TRUE if read handle, FALSE if write handle
-    char* buffer;     // Read buffer
-    int   buf_size;   // Buffer size
+	HANDLE handle;        // Windows handle to the pipe
+	BOOL is_read;         // TRUE if opened for reading
+	char* buffer;         // Read buffer
+	int   buf_size;       // Size of the buffer
+	OVERLAPPED ov;        // Overlapped structure for async I/O
 } PipeFile;
 
 //------------------------------------
-// Constructor Helper: Initialize PipeFile
+// Constructor Helper: Initialize PipeFile structure
 //------------------------------------
 static void init_pipefile(lua_State* L, PipeFile* pf, HANDLE h, BOOL is_read) {
-    pf->handle = h;
-    pf->is_read = is_read;
-    pf->buf_size = FILE_BUFFER_SIZE;
-    pf->buffer = (char*)malloc(pf->buf_size);
-    if (!pf->buffer) {
-        CloseHandle(h);
-        pf->handle = NULL;
-        pf->buf_size = 0;
-        luaL_error(L, "Memory allocation failed for pipe buffer");
-    }
+	pf->handle = h;
+	pf->is_read = is_read;
+	pf->buf_size = FILE_BUFFER_SIZE;
+	pf->buffer = (char*)malloc(pf->buf_size);
+	if (!pf->buffer) {
+		CloseHandle(h);
+		luaL_error(L, "Memory allocation failed for pipe buffer");
+	}
+
+	ZeroMemory(&pf->ov, sizeof(OVERLAPPED));
+	pf->ov.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (!pf->ov.hEvent) {
+		free(pf->buffer);
+		CloseHandle(h);
+		luaL_error(L, "Could not create OVERLAPPED event");
+	}
 }
 
 //------------------------------------
-// Destructor: Garbage Collector for PipeFile
+// Destructor: __gc metamethod for PipeFile
 //------------------------------------
 static int pipefile_gc(lua_State* L) {
-    PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
-    if (pf->handle)
-        CloseHandle(pf->handle);
-    if (pf->buffer)
-        free(pf->buffer);
-    return 0;
+	PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
+	if (pf->handle && pf->handle != INVALID_HANDLE_VALUE) CloseHandle(pf->handle);
+	if (pf->buffer) free(pf->buffer);
+	if (pf->ov.hEvent) CloseHandle(pf->ov.hEvent);
+	return 0;
 }
 
 //------------------------------------
-// Method: Write string to the pipe
+// Method: pipefile:write(data)
 //------------------------------------
 static int pipefile_write(lua_State* L) {
-    PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
-    size_t len;
-    const char* data = luaL_checklstring(L, 2, &len);
-    DWORD written = 0;
-    
-    if (!WriteFile(pf->handle, data, (DWORD)len, &written, NULL))
-        return push_last_error(L);
-        
-    lua_pushinteger(L, written);
-    return 1;
+	PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
+	size_t len;
+	const char* data = luaL_checklstring(L, 2, &len);
+	DWORD transferred = 0;
+
+	// Prepare OVERLAPPED
+	pf->ov.Offset = 0;
+	pf->ov.OffsetHigh = 0;
+	ResetEvent(pf->ov.hEvent);
+
+	BOOL success = WriteFile(pf->handle, data, (DWORD)len, &transferred, &pf->ov);
+	if (!success) {
+		DWORD err = GetLastError();
+		if (err == ERROR_IO_PENDING) {
+			if (!GetOverlappedResult(pf->handle, &pf->ov, &transferred, TRUE))
+				return push_last_error(L);
+		}
+		else {
+			return push_last_error(L);
+		}
+	}
+	lua_pushinteger(L, transferred);
+	return 1;
 }
 
 //------------------------------------
-// Method: Read from the pipe
+// Method: pipefile:read()
 //------------------------------------
 static int pipefile_read(lua_State* L) {
-    PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
-    DWORD read = 0;
-    BOOL result = ReadFile(pf->handle, pf->buffer, pf->buf_size - 1, &read, NULL);
-    
-    if (!result) {
-        DWORD err = GetLastError();
-        // Report non-critical cases: no data or pending I/O.
-        if (err == ERROR_NO_DATA || err == ERROR_MORE_DATA || err == ERROR_IO_PENDING) {
-            lua_pushnil(L);
-            lua_pushstring(L, "No data or pending I/O");
-            return 2;
-        }
-        return push_last_error(L);
-    }
-    
-    pf->buffer[read] = '\0';
-    lua_pushlstring(L, pf->buffer, read);
-    return 1;
+	PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
+	DWORD transferred = 0;
+
+	// Prepare OVERLAPPED
+	pf->ov.Offset = 0;
+	pf->ov.OffsetHigh = 0;
+	ResetEvent(pf->ov.hEvent);
+
+	BOOL success = ReadFile(pf->handle, pf->buffer, pf->buf_size - 1, &transferred, &pf->ov);
+	if (!success) {
+		DWORD err = GetLastError();
+		if (err == ERROR_IO_PENDING) {
+			if (!GetOverlappedResult(pf->handle, &pf->ov, &transferred, TRUE))
+				return push_last_error(L);
+		}
+		else {
+			return push_last_error(L);
+		}
+	}
+	pf->buffer[transferred] = '\0';
+	lua_pushlstring(L, pf->buffer, transferred);
+	return 1;
 }
 
 //------------------------------------
-// Method: Close the pipe handle
+// Method: pipefile:close()
 //------------------------------------
 static int pipefile_close(lua_State* L) {
-    PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
-    
-    if (pf->handle) {
-        CloseHandle(pf->handle);
-        pf->handle = NULL;
-    }
-    
-    lua_pushboolean(L, 1);
-    return 1;
+	PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
+	if (pf->handle && pf->handle != INVALID_HANDLE_VALUE) {
+		CloseHandle(pf->handle);
+		pf->handle = INVALID_HANDLE_VALUE;
+	}
+	lua_pushboolean(L, 1);
+	return 1;
 }
 
 //------------------------------------
-// Lua constructor: winpipe.open(pipe_name, mode)
+// Constructor: winpipe.open(pipe_name, mode)
+// mode: "r" or "w"
 //------------------------------------
 static int winpipe_open(lua_State* L) {
-    const char* pipe_name = luaL_checkstring(L, 1);
-    const char* mode = luaL_checkstring(L, 2);
-    
-    DWORD access = 0;
-    BOOL is_read = FALSE;
-    
-    if (strcmp(mode, "r") == 0) {
-        access = GENERIC_READ;
-        is_read = TRUE;
-    } else if (strcmp(mode, "w") == 0) {
-        access = GENERIC_WRITE;
-    } else {
-        return luaL_error(L, "Invalid mode: expected 'r' or 'w'");
-    }
-    
-    HANDLE hPipe = CreateFileA(
-        pipe_name,
-        access,
-        0,
-        NULL,
-        OPEN_EXISTING,
-        FILE_FLAG_OVERLAPPED,  // Enable asynchronous (non-blocking) mode
-        NULL
-    );
-    
-    if (hPipe == INVALID_HANDLE_VALUE)
-        return push_last_error(L);
-    
-    // Set pipe state to message mode with non-blocking behavior.
-    DWORD modeFlags = PIPE_READMODE_MESSAGE | PIPE_NOWAIT;
-    SetNamedPipeHandleState(hPipe, &modeFlags, NULL, NULL);
-    
-    // Create Lua userdata to hold our PipeFile structure.
-    PipeFile* pf = (PipeFile*)lua_newuserdata(L, sizeof(PipeFile));
-    luaL_getmetatable(L, FILE_MT);
-    lua_setmetatable(L, -2);
-    init_pipefile(L, pf, hPipe, is_read);
-    
-    return 1;
+	const char* pname = luaL_checkstring(L, 1);
+	const char* mode = luaL_checkstring(L, 2);
+
+	if (strcmp(mode, "r") != 0 && strcmp(mode, "w") != 0)
+		return luaL_error(L, "Invalid mode: '%s'. Use 'r' or 'w'.", mode);
+
+	DWORD access = (strcmp(mode, "r") == 0) ? GENERIC_READ : GENERIC_WRITE;
+	BOOL is_read = (strcmp(mode, "r") == 0);
+
+	HANDLE hPipe = CreateFileA(
+		pname,
+		access,
+		0,              // No sharing
+		NULL,           // Default security
+		OPEN_EXISTING,
+		FILE_FLAG_OVERLAPPED,
+		NULL
+	);
+	if (hPipe == INVALID_HANDLE_VALUE) return push_last_error(L);
+
+	// Ensure pipe is in message mode + non-blocking (optional)
+	DWORD modeFlags = PIPE_READMODE_MESSAGE | PIPE_NOWAIT;
+	SetNamedPipeHandleState(hPipe, &modeFlags, NULL, NULL);  // Best effort, ignore failure
+
+	PipeFile* pf = (PipeFile*)lua_newuserdata(L, sizeof(PipeFile));
+	luaL_getmetatable(L, FILE_MT);
+	lua_setmetatable(L, -2);
+
+	init_pipefile(L, pf, hPipe, is_read);
+	return 1;
 }
 
 //------------------------------------
-// File method table
-//------------------------------------
-static const struct luaL_Reg pipefile_methods[] = {
-    {"read",  pipefile_read},
-    {"write", pipefile_write},
-    {"close", pipefile_close},
-    {"__gc",  pipefile_gc},
-    {NULL, NULL}
-};
-
-//------------------------------------
-// Winpipe global functions
-//------------------------------------
-static const struct luaL_Reg winpipe_funs[] = {
-    {"open", winpipe_open},
-    {NULL, NULL}
-};
-
-//------------------------------------
-// Metamethod: String representation for PipeFile
+// Metamethod: tostring()
 //------------------------------------
 static int pipefile_tostring(lua_State* L) {
-    PipeFile* pf = (PipeFile*)luaL_checkudata(L, 1, FILE_MT);
-    lua_pushfstring(L, "WinPipe.File: %p (%s)", pf->handle, pf->is_read ? "read" : "write");
-    return 1;
+	PipeFile* pf = luaL_checkudata(L, 1, FILE_MT);
+	lua_pushfstring(L, "WinPipe.File: %p (%s)", pf->handle, pf->is_read ? "read" : "write");
+	return 1;
 }
+
+//------------------------------------
+// PipeFile method table
+//------------------------------------
+static const struct luaL_Reg pipefile_methods[] = {
+	{"read",  pipefile_read},
+	{"write", pipefile_write},
+	{"close", pipefile_close},
+	{"__gc",  pipefile_gc},
+	{"__tostring", pipefile_tostring},
+	{NULL, NULL}
+};
+
+//------------------------------------
+// Global functions for winpipe module
+//------------------------------------
+static const struct luaL_Reg winpipe_funs[] = {
+	{"open", winpipe_open},
+	{NULL, NULL}
+};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-//------------------------------------
-// Module registration function: Entry point for Lua.
-// NOTE: The symbol name must be exactly "luaopen_winpipe".
-//------------------------------------
-EXPORT int luaopen_winpipe(lua_State* L) {
-    // 1) Create and populate the File userdata metatable.
-    luaL_newmetatable(L, FILE_MT);
-    
-    // Set __tostring metamethod.
-    lua_pushcfunction(L, pipefile_tostring);
-    lua_setfield(L, -2, "__tostring");
-    
-    // Set __index metamethod to expose our file methods.
-    lua_pushvalue(L, -1);
-    lua_setfield(L, -2, "__index");
-    
-    // Register our PipeFile methods.
-    luaL_setfuncs(L, pipefile_methods, 0);
-    lua_pop(L, 1);
-    
-    // 2) Create the module table and register global functions.
-    luaL_newlib(L, winpipe_funs);
-    return 1;
-}
+	// Entry point for Lua module loader
+	EXPORT int luaopen_winpipe(lua_State* L) {
+		luaL_newmetatable(L, FILE_MT);
+		lua_pushvalue(L, -1);
+		lua_setfield(L, -2, "__index");
+		luaL_setfuncs(L, pipefile_methods, 0);
+		lua_pop(L, 1);
+
+		luaL_newlib(L, winpipe_funs);
+		return 1;
+	}
 
 #ifdef __cplusplus
 }

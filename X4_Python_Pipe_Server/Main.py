@@ -3,6 +3,7 @@ import json
 import argparse
 import logging
 import traceback
+import signal
 from pathlib import Path
 from importlib import machinery
 import win32api
@@ -11,6 +12,8 @@ from multiprocessing import Process, Event
 import inspect
 import threading
 from typing import List, Optional, Dict, Callable
+from multiprocessing import Queue
+from logging.handlers import QueueHandler, QueueListener
 
 from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
 
@@ -20,6 +23,34 @@ from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garba
 # Version and constants
 VERSION = '2.2.0'
 PIPE_NAME = 'x4_python_host'
+
+log_queue = Queue()
+def setup_main_logging():
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter('%(asctime)s | %(processName)s | %(levelname)s | %(message)s')
+    handler.setFormatter(formatter)
+
+    listener = QueueListener(log_queue, handler)
+    listener.start()
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.DEBUG)
+    root_logger.addHandler(QueueHandler(log_queue))
+    return listener
+
+def setup_worker_logging(log_queue):
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    logger.addHandler(QueueHandler(log_queue))
+
+# Signal handling for graceful shutdown
+def signal_handler(sig, frame):
+    logging.info(f"Received signal {sig}, shutting down...")
+    # Optionally set a shutdown flag or call cleanup
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, signal_handler)
+signal.signal(signal.SIGTERM, signal_handler)
 
 # Configure root logger
 log_format = '%(asctime)s %(levelname)s [%(threadName)s] %(message)s'
@@ -199,7 +230,7 @@ def run_server(args: argparse.Namespace) -> None:
 
             logger.info("Connecting to pipe...")
             pipe.Connect()
-            logger.info("Pipe connected, awaiting messages")
+            logger.info("Pipe connected, awaiting messages")         
 
             x4_root: Optional[Path] = None
 

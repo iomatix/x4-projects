@@ -93,12 +93,14 @@ writing and reading functions are shown here.
         -- Fields holding booleans.
         bool_fields = {'continuous'}
     }
-
     -- Called once on load: registers event handlers, clears state, and
     -- performs an initial probe to open read+write handles on the pipe.
     local function Init()
         -- 1) Listen for Process_Command events from MD.
-        RegisterEvent("pipeProcessCommand", L.Process_Command)
+        if not __pipe_callback_registered then
+            RegisterEvent("pipeProcessCommand", my_function)
+            __pipe_callback_registered = true
+        end
 
         -- 2) Compute and cache the player-specific blackboard key.
         L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))

@@ -1,249 +1,294 @@
 import logging
 import time
 import win32api
-import winerror
-import win32pipe
 import win32file
+import win32pipe
 import win32security
+import winerror
+import win32con
 import ntsecuritycon as con
-from .Misc import Client_Garbage_Collected
 from pywintypes import error as Win32Error
-from win32file import CreateFile, GENERIC_READ, GENERIC_WRITE, OPEN_EXISTING
 from typing import Optional
+from .Misc import Client_Garbage_Collected
 
 
 class Pipe:
-    '''
-    Base class for Pipe_Server and Pipe_Client.
-    Implements shared functionality using paired unidirectional pipes.
+    """
+    Abstract base class for named pipe communication using unidirectional pairs:
+    - `pipe_in`: inbound pipe for reading
+    - `pipe_out`: outbound pipe for writing
 
-    Parameters:
-    - pipe_name: base name of the pipe (without OS prefix).
-    - buffer_size: buffer size in bytes (default: 64 KB).
-    '''
+    Shared diagnostics, logging, and read/write operations are implemented here.
+    Subclasses must implement `connect()` (for clients) or `create()` (for servers), and `close()`.
+    """
+
     def __init__(self, pipe_name: str, buffer_size: Optional[int] = None):
+        """
+        Initialize pipe paths and shared state.
+
+        :param pipe_name: Base name for the pipe (e.g. 'X4_Python_Pipe')
+        :param buffer_size: Optional buffer size for pipe I/O
+        """
         self.pipe_name = pipe_name
         self.pipe_in_path = f"\\\\.\\pipe\\{pipe_name}_in"
         self.pipe_out_path = f"\\\\.\\pipe\\{pipe_name}_out"
-        self.buffer_size = buffer_size or 64 * 1024
-        self.nowait_set = False
+        self.buffer_size = buffer_size or 65536
+
         self.pipe_in = None
         self.pipe_out = None
+        self.nowait_set = False
 
-    def Read(self) -> Optional[str]:
-        '''
-        Reads a message from the input pipe. Blocks unless non-blocking mode is set.
+        self.diagnostics = {
+            'reads': 0,
+            'writes': 0,
+            'last_read': None,
+            'last_write': None,
+            'last_error': None
+        }
 
-        Returns:
-        - Message (str) or None if no data is available (non-blocking mode).
+        self.logger = logging.getLogger(__name__)
 
-        Raises:
-        - Client_Garbage_Collected: if message is 'garbage_collected'.
-        - win32api.error: on read failure.
-        '''
+    def read(self) -> Optional[str]:
+        """
+        Read a UTF-8 message from the input pipe.
+        :return: The decoded message, or None in non-blocking mode with no data.
+        """
         try:
-            _, data = win32file.ReadFile(self.pipe_in, self.buffer_size)
-            message = data.decode()
+            result, data = win32file.ReadFile(self.pipe_in, self.buffer_size)
+            message = data.decode('utf-8')
+            self.diagnostics['reads'] += 1
+            self.diagnostics['last_read'] = time.time()
+
+            self.logger.debug(f"Read from pipe: {message}")
             if message == 'garbage_collected':
                 raise Client_Garbage_Collected()
             return message
-        except win32api.error as ex:
+        except Win32Error as ex:
+            self.diagnostics['last_error'] = str(ex)
             if ex.winerror == winerror.ERROR_NO_DATA and self.nowait_set:
                 return None
-            logging.error(f"Read error: {ex}")
+            self.logger.error(f"Read error: {ex}")
             raise
 
-    def Write(self, message: str) -> None:
-        '''
-        Writes a message to the output pipe.
-
-        Raises:
-        - win32api.error: on write failure.
-        '''
+    def write(self, message: str) -> None:
+        """
+        Write a UTF-8 message to the output pipe.
+        :param message: The message string to write.
+        """
         try:
-            win32file.WriteFile(self.pipe_out, message.encode())
-        except win32api.error as ex:
-            logging.error(f"Write error: {ex}")
+            win32file.WriteFile(self.pipe_out, message.encode('utf-8'))
+            self.diagnostics['writes'] += 1
+            self.diagnostics['last_write'] = time.time()
+            self.logger.debug(f"Wrote to pipe: {message}")
+            win32file.FlushFileBuffers(self.pipe_out)
+        except Win32Error as ex:
+            self.diagnostics['last_error'] = str(ex)
+            self.logger.error(f"Write error: {ex}")
             raise
 
-    def Set_Nonblocking(self) -> None:
-        '''Sets both pipes to non-blocking mode.'''
-        if not self.nowait_set:
-            self.nowait_set = True
-            for pipe in (self.pipe_in, self.pipe_out):
+    def set_nonblocking(self) -> None:
+        """
+        Configure both pipes to non-blocking (PIPE_NOWAIT) mode.
+        """
+        if self.nowait_set:
+            return
+
+        for name, pipe in zip(('in', 'out'), (self.pipe_in, self.pipe_out)):
+            if not pipe:
+                self.logger.warning(f"{name} pipe not initialized.")
+                continue
+            try:
                 win32pipe.SetNamedPipeHandleState(
                     pipe,
                     win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_NOWAIT,
                     None,
                     None
                 )
+                self.logger.debug(f"{name} pipe set to non-blocking.")
+            except Win32Error as e:
+                self.diagnostics['last_error'] = str(e)
+                self.logger.error(f"Failed to set {name} pipe to non-blocking: {e}")
+                raise
 
-    def Set_Blocking(self) -> None:
-        '''Sets both pipes to blocking mode.'''
-        if self.nowait_set:
-            self.nowait_set = False
-            for pipe in (self.pipe_in, self.pipe_out):
-                win32pipe.SetNamedPipeHandleState(
-                    pipe,
-                    win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-                    None,
-                    None
-                )
+        self.nowait_set = True
+
+    def set_blocking(self) -> None:
+        """
+        Configure both pipes to blocking (PIPE_WAIT) mode.
+        """
+        for pipe in (self.pipe_in, self.pipe_out):
+            if not pipe:
+                continue
+            win32pipe.SetNamedPipeHandleState(
+                pipe,
+                win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
+                None,
+                None
+            )
+        self.nowait_set = False
 
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.Close()
+    def __exit__(self, exc_type, exc_val, tb):
+        self.close()
 
-    def Close(self):
-        raise NotImplementedError("Subclasses must implement Close")
+    def close(self) -> None:
+        """
+        Must be implemented by subclasses. Closes handles.
+        """
+        raise NotImplementedError("Subclasses must implement close().")
 
 
 class Pipe_Server(Pipe):
-    '''
-    Named pipe server using two unidirectional pipes.
+    """
+    Named pipe server using unidirectional read/write pipes.
+    """
 
-    Parameters:
-    - pipe_name: base name for the pipes.
-    - buffer_size: buffer size for the pipes.
-    - verbose: enable verbose logging.
-    '''
     def __init__(self, pipe_name: str, buffer_size: Optional[int] = None, verbose: bool = False):
+        """
+        Create named pipes and set up security attributes.
+
+        :param pipe_name: Base name of the pipe
+        :param buffer_size: Optional buffer size
+        :param verbose: Enable additional logging
+        """
         super().__init__(pipe_name, buffer_size)
         self.verbose = verbose
-        sec_attr = self._setup_security_attributes()
+        sec_attr = self._create_security_attributes()
 
         try:
             self.pipe_in = win32pipe.CreateNamedPipe(
                 self.pipe_in_path,
-                win32pipe.PIPE_ACCESS_INBOUND,
+                win32con.PIPE_ACCESS_INBOUND,
                 win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_READMODE_MESSAGE | win32pipe.PIPE_WAIT,
-                1,
-                self.buffer_size,
-                self.buffer_size,
-                300,
-                sec_attr,
+                1, self.buffer_size, self.buffer_size, 0, sec_attr
             )
             self.pipe_out = win32pipe.CreateNamedPipe(
                 self.pipe_out_path,
-                win32pipe.PIPE_ACCESS_OUTBOUND,
+                win32con.PIPE_ACCESS_OUTBOUND,
                 win32pipe.PIPE_TYPE_MESSAGE | win32pipe.PIPE_WAIT,
-                1,
-                self.buffer_size,
-                self.buffer_size,
-                300,
-                sec_attr,
+                1, self.buffer_size, self.buffer_size, 0, sec_attr
             )
-        except win32api.error as ex:
-            logging.exception("Failed to create named pipes")
+        except Win32Error as ex:
+            self.diagnostics['last_error'] = str(ex)
+            self.logger.exception("Failed to create named pipes")
             raise
 
-        logging.info(f"Started serving: {self.pipe_in_path}, {self.pipe_out_path}")
+        self.logger.info(f"Pipe server created: {self.pipe_in_path}, {self.pipe_out_path}")
 
-    def _setup_security_attributes(self) -> Optional[win32security.SECURITY_ATTRIBUTES]:
-        '''
-        Returns security attributes allowing read/write access to the current user.
-        '''
-        sec_attr = win32security.SECURITY_ATTRIBUTES()
-        sec_desc = sec_attr.SECURITY_DESCRIPTOR
-        dacl = win32security.ACL()
-        perms_set = False
-
-        account_name = win32api.GetUserName()
+    def _create_security_attributes(self):
+        """
+        Create security attributes allowing current user full access.
+        """
         try:
-            account_id, _, _ = win32security.LookupAccountName(None, account_name)
-            dacl.AddAccessAllowedAce(win32security.ACL_REVISION, con.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE, account_id)
-            perms_set = True
-            if self.verbose:
-                logging.info(f"Pipe ACL set for user: {account_name}")
-        except win32api.error as ex:
-            if self.verbose:
-                logging.warning(f"Failed to set pipe permissions: {ex}")
+            sd = win32security.SECURITY_DESCRIPTOR()
+            sd.Initialize()
+            user, _, _ = win32security.LookupAccountName(None, win32api.GetUserName())
+            dacl = win32security.ACL()
+            dacl.AddAccessAllowedAce(win32security.ACL_REVISION, con.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE, user)
+            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            sa = win32security.SECURITY_ATTRIBUTES()
+            sa.SECURITY_DESCRIPTOR = sd
+            return sa
+        except Exception as e:
+            self.logger.warning("Could not create secure DACL. Proceeding with default.")
+            return None
 
-        if perms_set:
-            sec_desc.SetSecurityDescriptorDacl(1, dacl, 0)
-            return sec_attr
-        return None
-
-    def Connect(self) -> None:
-        '''Waits for a client to connect to both named pipes.'''
-        for pipe in (self.pipe_in, self.pipe_out):
+    def connect(self) -> None:
+        """
+        Wait for client connections on both pipe ends.
+        """
+        for name, pipe in zip(('in', 'out'), (self.pipe_in, self.pipe_out)):
             try:
+                self.logger.debug(f"Waiting for client to connect on {name} pipe...")
                 win32pipe.ConnectNamedPipe(pipe, None)
-            except win32api.error as e:
-                if e.winerror != winerror.ERROR_PIPE_CONNECTED:
+                self.logger.info(f"Client connected on {name} pipe.")
+            except Win32Error as e:
+                if e.winerror == winerror.ERROR_PIPE_CONNECTED:
+                    self.logger.debug(f"Client already connected on {name}.")
+                else:
+                    self.logger.error(f"Error connecting to pipe {name}: {e}")
                     raise
-        logging.info("Client connected")
 
-    def Close(self) -> None:
-        '''Flushes and closes both server pipe handles.'''
-        logging.info(f"Closing server pipes: {self.pipe_in_path}, {self.pipe_out_path}")
+    def close(self) -> None:
+        """
+        Disconnect and close both pipe handles.
+        """
+        self.logger.info("Closing server pipe handles.")
         for pipe in (self.pipe_in, self.pipe_out):
+            if not pipe:
+                continue
             try:
                 win32file.FlushFileBuffers(pipe)
                 win32pipe.DisconnectNamedPipe(pipe)
                 win32file.CloseHandle(pipe)
-            except Exception as e:
-                logging.warning(f"Error closing pipe: {e}")
-
-    @staticmethod
-    def wait_for_pipe(pipe_name: str, access: int, timeout: float = 5.0, interval: float = 0.1):
-        '''Polls until the named pipe is available or timeout occurs.'''
-        start = time.time()
-        while time.time() - start < timeout:
-            try:
-                return CreateFile(pipe_name, access, 0, None, OPEN_EXISTING, 0, None)
             except Win32Error as e:
-                if e.winerror != winerror.ERROR_FILE_NOT_FOUND:
-                    raise
-                time.sleep(interval)
-        raise TimeoutError(f"Could not connect to pipe: {pipe_name}")
+                self.logger.warning(f"Error closing pipe: {e}")
 
 
 class Pipe_Client(Pipe):
-    '''
-    Named pipe client using two unidirectional pipes.
+    """
+    Named pipe client using unidirectional read/write pipes.
+    """
 
-    Parameters:
-    - pipe_name: base name for the pipes.
-    - buffer_size: buffer size for the pipes.
-    '''
     def __init__(self, pipe_name: str, buffer_size: Optional[int] = None):
+        """
+        Initialize paths and connect to server pipes.
+
+        :param pipe_name: Base pipe name (same as server)
+        :param buffer_size: Optional buffer size
+        """
         super().__init__(pipe_name, buffer_size)
 
-        try:
-            self.pipe_in = win32file.CreateFile(
-                self.pipe_out_path,
-                GENERIC_READ,
-                0,
-                None,
-                OPEN_EXISTING,
-                0,
-                None
-            )
-            win32pipe.SetNamedPipeHandleState(self.pipe_in, win32pipe.PIPE_READMODE_MESSAGE, None, None)
+    def connect(self, timeout: float = 10.0, interval: float = 0.25) -> None:
+        """
+        Attempt to connect to the server pipes with retry.
 
-            self.pipe_out = win32file.CreateFile(
-                self.pipe_in_path,
-                GENERIC_WRITE,
-                0,
-                None,
-                OPEN_EXISTING,
-                0,
-                None
-            )
-        except win32api.error as ex:
-            logging.exception("Failed to connect to server pipes")
-            raise
+        :param timeout: Max time in seconds to retry
+        :param interval: Delay between attempts
+        """
+        deadline = time.time() + timeout
 
-        logging.info(f"Client connected to: {self.pipe_in_path}, {self.pipe_out_path}")
-
-    def Close(self) -> None:
-        '''Closes both client pipe handles.'''
-        logging.info("Closing client pipes")
-        for pipe in (self.pipe_in, self.pipe_out):
+        while time.time() < deadline:
             try:
-                win32file.CloseHandle(pipe)
-            except Exception as e:
-                logging.warning(f"Error closing client pipe: {e}")
+                self.pipe_out = win32file.CreateFile(
+                    self.pipe_out_path,
+                    win32con.GENERIC_WRITE,
+                    0,
+                    None,
+                    win32con.OPEN_EXISTING,
+                    0,
+                    None
+                )
+                self.pipe_in = win32file.CreateFile(
+                    self.pipe_in_path,
+                    win32con.GENERIC_READ,
+                    0,
+                    None,
+                    win32con.OPEN_EXISTING,
+                    0,
+                    None
+                )
+                self.logger.info("Connected to server pipes.")
+                return
+            except Win32Error as e:
+                if e.winerror in (winerror.ERROR_FILE_NOT_FOUND, winerror.ERROR_PIPE_BUSY):
+                    time.sleep(interval)
+                else:
+                    self.logger.error(f"Unexpected error connecting to pipes: {e}")
+                    raise
+
+        raise TimeoutError(f"Failed to connect to pipes within {timeout:.1f}s")
+
+    def close(self) -> None:
+        """
+        Close pipe handles.
+        """
+        self.logger.info("Closing client pipe handles.")
+        for pipe in (self.pipe_in, self.pipe_out):
+            if pipe:
+                try:
+                    win32file.CloseHandle(pipe)
+                except Win32Error as e:
+                    self.logger.warning(f"Error closing client pipe: {e}")

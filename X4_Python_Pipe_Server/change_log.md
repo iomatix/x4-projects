@@ -60,3 +60,4 @@ Change Log
   - Kept exception handling with logging.
   - Calling `trim_log` to test the file size management.
   - Structured to accept `args` for flexibility in testing setups.
+* 2.2.0

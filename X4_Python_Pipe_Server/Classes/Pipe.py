@@ -199,7 +199,8 @@ class Pipe_Server(Pipe):
         """
         Wait for client connections on both pipe ends.
         """
-        for name, pipe in zip(('in', 'out'), (self.pipe_in, self.pipe_out)):
+        # client opens 'out' first, so server must listen 'out' first
+        for name, pipe in (('out', self.pipe_out), ('in', self.pipe_in)):
             try:
                 self.logger.debug(f"Waiting for client to connect on {name} pipe...")
                 if name == 'in':

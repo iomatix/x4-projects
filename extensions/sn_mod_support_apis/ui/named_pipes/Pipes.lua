@@ -107,8 +107,8 @@ function M.Connect_Pipe(name)
         local outPipe = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
 
         if Lib.debug.print_to_log then
-            DebugError(("Tried open: write=%s, read=%s"):format(inPipe and inPipe.name or "nil",
-                outPipe and outPipe.name or "nil"))
+            DebugError(("Tried open: write=%s, read=%s"):format(M.prefix .. name .. "_in", M.prefix .. name .. "_out"))
+            DebugError(("Got handles: in=%s, out=%s"):format(tostring(inPipe), tostring(outPipe)))
         end
 
         if inPipe and outPipe then

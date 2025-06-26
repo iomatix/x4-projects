@@ -85,42 +85,57 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         return p
     end
 
-    -- --------------------------------------------------------------------------
-    -- Public: Open both ends of the pipe in overlapped (non-blocking) mode
-    -- Returns true on success, errors on failure after retries
-    -- --------------------------------------------------------------------------
-    function M.Connect_Pipe(name)
-        local p = M.Declare_Pipe(name)
-        if p.write_file and p.read_file then
-            return true
+-- --------------------------------------------------------------------------
+-- Public: Open both ends of the pipe in overlapped (non-blocking) mode
+-- Returns true on success, errors on failure after retries
+-- --------------------------------------------------------------------------
+function M.Connect_Pipe(name)
+    local p = M.Declare_Pipe(name)
+    -- fast-path if already open
+    if p.write_file and p.read_file then
+        return true
+    end
+
+    local max_attempts = 3
+    local delay = 3 -- seconds
+    local attempt_counter = 0
+    for attempt = 1, max_attempts do
+        if Lib.debug.print_to_log then
+            DebugError(("Attempt %d to open pipes for '%s'"):format(attempt, name))
+        end
+        local inPipe = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
+        local outPipe = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
+
+        if Lib.debug.print_to_log then
+            DebugError(("Tried open: write=%s, read=%s"):format(inPipe and inPipe.name or "nil",
+                outPipe and outPipe.name or "nil"))
         end
 
-        local max_attempts = 3
-        local delay = 3 -- seconds
-        local attempt_counter = 0
-        for attempt = 0, max_attempts, 1 do
-            attempt_counter = attempt_counter + 1
-            if Lib.debug.print_to_log then DebugError(("Attempt %d to open pipes for '%s'"):format(attempt_counter, name)) end
-            local pipe_write = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
-            local pipe_read = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
-            if Lib.debug.print_to_log then DebugError(("Client tried open pipes for '%s': write='%s', read='%s'"):format(name, pipe_write and pipe_write.name or "nil", pipe_read and pipe_read.name or "nil")) end
+        if inPipe and outPipe then
+            p.write_file = inPipe.write_file
+            p.read_file = outPipe.read_file
+            DebugError(("Named_Pipes: '%s' connected (non-blocking)"):format(name))
+            return true -- **succeeded, bail out immediately**
+        end
 
-            if pipe_write and pipe_read then
-                p.write_file = pipe_write.write_file
-                p.read_file = pipe_read.read_file
-                if Lib.debug.print_to_log then DebugError(("Named_Pipes: pipe '%s' connected (non-blocking)"):format(name)) end
-            else
-                if pipe_write then pipe_write:close() end
-                if pipe_read then pipe_read:close() end
-                if attempt_counter < max_attempts then
-                    if Lib.debug.print_to_log then DebugError(("Retrying in %d seconds..."):format(delay)) end
-                    os.execute("ping 127.0.0.1 -n " .. delay + 1 .. " >nul") -- Sleep for delay seconds
-                else
-                    error(("Named_Pipes: failed to open both ends for '%s' after %d attempts"):format(name, max_attempts), 2)
-                end
-            end
+        -- clean up the partial handles
+        if inPipe then
+            inPipe:close()
+        end
+        if outPipe then
+            outPipe:close()
+        end
+
+        if attempt < max_attempts then
+            DebugError(("Retrying in %d seconds…"):format(delay_secs))
+            -- platform-agnostic sleep (requires LuaSocket) or FFI Sleep
+            socket.sleep(delay_secs)
+        else
+            error(("Named_Pipes: failed after %d attempts for '%s'"):format(max_attempts, name), 2)
         end
     end
+end
+
 
     -- --------------------------------------------------------------------------
     -- Public: Close both handles and signal a disconnect event

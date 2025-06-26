@@ -98,8 +98,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         local max_attempts = 3
         local delay = 1 -- seconds
 
-        for attempt = 0, max_attempts do
-            attempt = attempt + 1
+        for attempt = 0, max_attempts, 1 do
             if Lib.debug.print_to_log then DebugError(("Attempt %d to open pipes for '%s'"):format(attempt, name)) end
             local pipe_write = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
             local pipe_read = winpipe.open_pipe(M.prefix .. name .. "_out", "r")

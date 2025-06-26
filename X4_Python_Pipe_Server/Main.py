@@ -21,6 +21,9 @@ logger = logging.getLogger(__name__)
 
 signal.signal(signal.SIGINT, signal_handler)
 signal.signal(signal.SIGTERM, signal_handler)
+if DEVELOPER_MODE:
+    logger.debug("Signal handlers registered for SIGINT and SIGTERM")
+
 sys.excepthook = exception_hook
 
 def write_server_info(args):

@@ -28,7 +28,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Library", funct
             if return_value == nil then
                 return_value = "nil"
             end
-            DebugError("UI Event: Named_Pipes, " .. name .. " ; value: " .. return_value)
+            if L.debug.print_to_log then DebugError("UI Event: Named_Pipes, " .. name .. " ; value: " .. return_value) end
         end
     end
 
@@ -41,7 +41,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Library", funct
     --    local position = string.find(this_string, ";")
     --    if position == nil then
     --        -- Debug error printout gets a nicer log heading.
-    --        DebugError("No ';' separator found in: "..tostring(this_string))
+    --        if L.debug.print_to_log then DebugError("No ';' separator found in: "..tostring(this_string)) end
     --        -- Hard error.
     --        error("Bad separator")
     --    end

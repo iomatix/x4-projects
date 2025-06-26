@@ -17,7 +17,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
       - Uses winpipe.open_pipe, winpipe.peek_pipe, file:read_pipe(), file:write_pipe()
       - Polls once per frame only while work remains.
       - Cleans up resources via a __gc proxy on each pipe state table.
-  ]]
+    ]]
 
     local ffi = require("ffi")
     ffi.cdef [[ bool IsGamePaused(void); ]]
@@ -45,9 +45,11 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     -- --------------------------------------------------------------------------
     local function cleanup(p)
         if p.write_file then
+            if Lib.debug.print_to_log then DebugError("Closing write pipe for " .. p.name) end
             p.write_file:close_pipe()
         end
         if p.read_file then
+            if Lib.debug.print_to_log then DebugError("Closing read pipe for " .. p.name) end
             p.read_file:close_pipe()
         end
     end
@@ -60,6 +62,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         getmetatable(proxy).__gc = function()
             cleanup(p)
         end
+        p.gc_proxy = proxy -- Keep reference to ensure GC works
     end
 
     -- --------------------------------------------------------------------------
@@ -69,6 +72,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         local p = M.pipes[name]
         if type(p) ~= "table" or not p.read_fifo or not p.write_fifo then
             p = {
+                name = name, -- Store name for logging
                 write_file = nil, -- WinPipe.File userdata
                 read_file = nil, -- WinPipe.File userdata
                 suppress_reads_when_paused = false,
@@ -83,7 +87,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
 
     -- --------------------------------------------------------------------------
     -- Public: Open both ends of the pipe in overlapped (non-blocking) mode
-    -- Returns true on success, errors on failure
+    -- Returns true on success, errors on failure after retries
     -- --------------------------------------------------------------------------
     function M.Connect_Pipe(name)
         local p = M.Declare_Pipe(name)
@@ -91,28 +95,29 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
             return true
         end
 
-        -- Attempt to open both ends
-        local pipe_write = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
-        if not (pipe_write and pipe_write.write_file) then
-            DebugError(("Named_Pipes: failed to open write pipe '%s_in'"):format(name))
-        else
-            p.write_file = pipe_write.write_file
-        end
+        local max_attempts = 3
+        local delay = 1 -- seconds
 
-        local pipe_read = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
-        if not (pipe_read and pipe_read.read_file) then
-            DebugError(("Named_Pipes: failed to open read pipe '%s_out'"):format(name))
-        else
-            p.read_file = pipe_read.read_file
-        end
+        for attempt = 1, max_attempts do
+            if Lib.debug.print_to_log then DebugError(("Attempt %d to open pipes for '%s'"):format(attempt, name)) end
+            local pipe_write = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
+            local pipe_read = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
 
-        -- Final check
-        if not (p.write_file and p.read_file) then
-            cleanup(p)
-            error(("Named_Pipes: failed to open both ends for '%s'"):format(name), 2)
+            if pipe_write and pipe_read then
+                p.write_file = pipe_write.write_file
+                p.read_file = pipe_read.read_file
+                if Lib.debug.print_to_log then DebugError(("Named_Pipes: pipe '%s' connected (non-blocking)"):format(name)) end
+            else
+                if pipe_write then pipe_write:close() end
+                if pipe_read then pipe_read:close() end
+                if attempt < max_attempts then
+                    if Lib.debug.print_to_log then DebugError(("Retrying in %d seconds..."):format(delay)) end
+                    os.execute("ping 127.0.0.1 -n " .. delay + 1 .. " >nul") -- Sleep for delay seconds
+                else
+                    error(("Named_Pipes: failed to open both ends for '%s' after %d attempts"):format(name, max_attempts), 2)
+                end
+            end
         end
-        DebugError(("Named_Pipes: pipe '%s' connected (non-blocking)"):format(name))
-        return true
     end
 
     -- --------------------------------------------------------------------------
@@ -129,7 +134,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         p.read_file = nil
 
         Lib.Raise_Signal(name .. "_disconnected")
-        DebugError(name .. " disconnected")
+        if Lib.debug.print_to_log then DebugError(name .. " disconnected") end
     end
 
     -- --------------------------------------------------------------------------
@@ -148,7 +153,6 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         local p = M.Declare_Pipe(name)
         FIFO.Write(p.read_fifo, {callback_id, continuous})
         pcall(M.Connect_Pipe, name)
-        M._trigger_read = true
         M.Poll_For_Reads()
     end
 
@@ -159,7 +163,6 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         local p = M.Declare_Pipe(name)
         FIFO.Write(p.write_fifo, {callback_id, message})
         pcall(M.Connect_Pipe, name)
-        M._trigger_write = true
         M.Poll_For_Writes()
     end
 
@@ -197,8 +200,12 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
                         Lib.Raise_Signal("pipeRead_complete_" .. cb_id, data)
                         more = more or continuous
                     else
-                        DebugError(name .. " read error: " .. tostring(err))
-                        M.Close_Pipe(name)
+                        if Lib.debug.print_to_log then DebugError(name .. " read error: " .. tostring(err)) end
+                        if err == "pipe broken" or err == 109 or err == 233 then
+                            if Lib.debug.print_to_log then DebugError(name .. " pipe closed, attempting to reconnect") end
+                            M.Disconnect_Pipe(name)
+                            pcall(M.Connect_Pipe, name)
+                        end
                         break
                     end
                 end
@@ -230,17 +237,20 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
                     local cb_id, msg = unpack(FIFO.Next(p.write_fifo))
                     local ok, err = p.write_file:write_pipe(msg)
 
-                    if ok then
+                   if ok then
                         FIFO.Read(p.write_fifo)
                         Lib.Raise_Signal("pipeWrite_complete_" .. cb_id, "SUCCESS")
-                        -- continue writing if queue not empty
                         more = more or (#p.write_fifo > 0)
                     elseif err == winpipe.ERROR_NO_DATA then
                         more = true
                         break
                     else
-                        DebugError(name .. " write error: " .. tostring(err))
-                        M.Close_Pipe(name)
+                        if Lib.debug.print_to_log then DebugError(name .. " write error: " .. tostring(err)) end
+                        if err == "pipe broken" or err == 109 or err == 233 then
+                            if Lib.debug.print_to_log then DebugError(name .. " pipe closed, attempting to reconnect") end
+                            M.Disconnect_Pipe(name)
+                            pcall(M.Connect_Pipe, name)
+                        end
                         break
                     end
                 end
@@ -254,7 +264,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     end
 
     -- --------------------------------------------------------------------------
-    -- Public: Suppress reads when the game is paused (for a given pipe)
+    -- Public: Suppress reads when the game is paused
     -- --------------------------------------------------------------------------
     function M.Set_Suppress_Paused_Reads(name, state)
         M.Declare_Pipe(name).suppress_reads_when_paused = state

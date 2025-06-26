@@ -187,7 +187,7 @@ class Pipe_Server(Pipe):
             user, _, _ = win32security.LookupAccountName(None, win32api.GetUserName())
             dacl = win32security.ACL()
             dacl.AddAccessAllowedAce(win32security.ACL_REVISION, con.FILE_GENERIC_READ | con.FILE_GENERIC_WRITE, user)
-            sd.SetSecurityDescriptorDacl(1, dacl, 0)
+            sd.SetSecurityDescriptorDacl(1, None, 0) # Allow everyone (SACL param) for now (TODO: try dacl later)
             sa = win32security.SECURITY_ATTRIBUTES()
             sa.SECURITY_DESCRIPTOR = sd
             return sa

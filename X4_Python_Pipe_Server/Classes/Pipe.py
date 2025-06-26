@@ -202,6 +202,10 @@ class Pipe_Server(Pipe):
         for name, pipe in zip(('in', 'out'), (self.pipe_in, self.pipe_out)):
             try:
                 self.logger.debug(f"Waiting for client to connect on {name} pipe...")
+                if name == 'in':
+                    self.logger.debug(f"... at {self.pipe_in_path}")
+                elif name == 'out':
+                    self.logger.debug(f"... at {self.pipe_out_path}")
                 win32pipe.ConnectNamedPipe(pipe, None)
                 self.logger.info(f"Client connected on {name} pipe.")
             except Win32Error as e:

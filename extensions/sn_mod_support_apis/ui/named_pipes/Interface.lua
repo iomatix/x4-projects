@@ -1,5 +1,5 @@
 Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Interface", function(require)
---[[
+    --[[
 MD → Lua Pipe API
        Registers a command handler, clears stale args, signals reload,
        and primes the named-pipe connection for both read and write. 
@@ -76,146 +76,140 @@ writing and reading functions are shown here.
     - Optional, lua function to call, taking one argument.
 ]]
 
+    -- Set up any used ffi functions.
+    local ffi = require("ffi")
+    local C = ffi.C
+    ffi.cdef [[ typedef uint64_t UniverseID; UniverseID GetPlayerID(void); ]]
 
--- Set up any used ffi functions.
-local ffi = require("ffi")
-local C = ffi.C
-ffi.cdef[[ typedef uint64_t UniverseID; UniverseID GetPlayerID(void); ]]
+    -- Import lib functions and pipe management.
+    local Lib = require("extensions.sn_mod_support_apis.ui.named_pipes.Library")
+    local Pipes = require("extensions.sn_mod_support_apis.ui.named_pipes.Pipes")
+    local Print_Table = require("extensions.sn_mod_support_apis.ui.Library").Print_Table
 
--- Import lib functions and pipe management.
-local Lib = require("extensions.sn_mod_support_apis.ui.named_pipes.Library")
-local Pipes = require("extensions.sn_mod_support_apis.ui.named_pipes.Pipes")
-local Print_Table = require("extensions.sn_mod_support_apis.ui.Library").Print_Table
+    -- Table of local functions or data.
+    local L = {
+        -- Any command arguments not yet processed.
+        queued_args = {},
+        -- Fields holding booleans.
+        bool_fields = {'continuous'}
+    }
 
+    -- Called once on load: registers event handlers, clears state, and
+    -- performs an initial probe to open read+write handles on the pipe.
+    local function Init()
+        -- 1) Listen for Process_Command events from MD.
+        RegisterEvent("pipeProcessCommand", L.Process_Command)
 
--- Table of local functions or data.
-local L = {
-    -- Any command arguments not yet processed.
-    queued_args = {},
-    -- Fields holding booleans.
-    bool_fields = {'continuous'},
-}
+        -- 2) Compute and cache the player-specific blackboard key.
+        L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
 
-
-
--- Called once on load: registers event handlers, clears state, and
--- performs an initial probe to open read+write handles on the pipe.
-local function Init()
-  -- 1) Listen for Process_Command events from MD.
-  RegisterEvent("pipeProcessCommand", L.Process_Command)
-
-  -- 2) Compute and cache the player-specific blackboard key.
-  L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
-
-  -- 3) Clear any leftover arguments in the player blackboard.
-  SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-
-  -- 4) Notify the Python server that the Lua interface is reloaded.
-  Lib.Raise_Signal('reloaded')
-
-  -- 5) Enqueue a dummy Read to force the client to open the read handle.
-  Pipes.Schedule_Read("x4_python_host", "init_probe", false)
-
-  -- 6) Enqueue a dummy Write to force the client to open the write handle.
-  Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
-
-  -- 7) Explicitly attempt Connect_Pipe to expedite the handshake.
-  pcall(Pipes.Connect_Pipe, "x4_python_host")
-end
-
-
--- Get args from the player blackboard, and return the next entry.
-function L.Get_Next_Args()
-    -- If the list of queued args is empty, grab more from md.
-    if #L.queued_args == 0 then
-    
-        -- Args are attached to the player component object.
-        local args_list = GetNPCBlackboard(L.player_id, "$pipe_api_args")
-        
-        -- Loop over it and move entries to the queue.
-        for i, v in ipairs(args_list) do
-            table.insert(L.queued_args, v)
-        end
-        
-        -- Clear the md var by writing nil.
+        -- 3) Clear any leftover arguments in the player blackboard.
         SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-    end
-    --DebugError("num args: "..tostring(#L.queued_args))
-    
-    -- Pop the first table entry.
-    local args = table.remove(L.queued_args, 1)
 
-    -- Check args for any 0 entries on bool fields, convert to false.
-    for _, field in ipairs(L.bool_fields) do
-        if args[field] == 0 then
-            args[field] = false
+        -- 4) Notify the Python server that the Lua interface is reloaded.
+        Lib.Raise_Signal('reloaded')
+
+        -- 5) Enqueue a dummy Read to force the client to open the read handle.
+        Pipes.Schedule_Read("x4_python_host", "init_probe", false)
+
+        -- 6) Enqueue a dummy Write to force the client to open the write handle.
+        Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
+
+        -- 7) Explicitly attempt Connect_Pipe to expedite the handshake.
+        pcall(Pipes.Connect_Pipe, "x4_python_host")
+    end
+
+    -- Get args from the player blackboard, and return the next entry.
+    function L.Get_Next_Args()
+        -- If the list of queued args is empty, grab more from md.
+        if #L.queued_args == 0 then
+
+            -- Args are attached to the player component object.
+            local args_list = GetNPCBlackboard(L.player_id, "$pipe_api_args")
+
+            -- Loop over it and move entries to the queue.
+            for i, v in ipairs(args_list) do
+                table.insert(L.queued_args, v)
+            end
+
+            -- Clear the md var by writing nil.
+            SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
+        end
+        -- DebugError("num args: "..tostring(#L.queued_args))
+
+        -- Pop the first table entry.
+        local args = table.remove(L.queued_args, 1)
+
+        -- Check args for any 0 entries on bool fields, convert to false.
+        for _, field in ipairs(L.bool_fields) do
+            if args[field] == 0 then
+                args[field] = false
+            end
+        end
+
+        return args
+    end
+
+    -- Generic command handler.
+    -- When this is signalled, there may be multiple commands queued.
+    function L.Process_Command()
+        local args = L.Get_Next_Args()
+
+        if Lib.debug.print_to_log then
+            Print_Table(args, "Pipes.Interface.Process_Command args")
+        end
+
+        if args.command == "Read" then
+            Pipes.Schedule_Read(args.pipe_name, args.access_id, args.continuous)
+
+        elseif args.command == "Write" then
+            Pipes.Schedule_Write(args.pipe_name, args.access_id, args.message)
+
+        elseif args.command == "WriteSpecial" then
+            -- Handle special commands.
+            -- Note: if the command not recognized, it just gets sent as-is.
+            if args.message == "package.path" then
+                -- Want to write out the current package.path.
+                args.message = "package.path:" .. package.path
+            end
+            -- Pass to the scheduler.
+            Pipes.Schedule_Write(args.pipe_name, args.access_id, args.message)
+
+        elseif args.command == "CancelReads" then
+            Pipes.Deschedule_Reads(args.pipe_name)
+
+        elseif args.command == "CancelWrites" then
+            Pipes.Deschedule_Writes(args.pipe_name)
+
+        elseif args.command == "Check" then
+            -- Check if a pipe is connected.
+
+            local success = pcall(Pipes.Connect_Pipe, args.pipe_name)
+            -- Translate to strings that match read/write returns.
+            local message
+            if success then
+                message = "SUCCESS"
+            else
+                message = "ERROR"
+            end
+            -- Send back to md.
+            if type(args.callback) == "string" then
+                L.Raise_Signal('pipeCheck_complete_' .. args.callback, message)
+            end
+
+        elseif args.command == "Close" then
+            Pipes.Close_Pipe(args.pipe_name)
+
+        elseif args.command == "SuppressPausedReads" then
+            Pipes.Set_Suppress_Paused_Reads(args.pipe_name, true)
+
+        elseif args.command == "UnsuppressPausedReads" then
+            Pipes.Set_Suppress_Paused_Reads(args.pipe_name, false)
         end
     end
 
-    return args
-end
+    -- Immediately initialize so the interface starts up on require()
+    Init()
 
--- Generic command handler.
--- When this is signalled, there may be multiple commands queued.
-function L.Process_Command()
-    local args = L.Get_Next_Args()
-
-    if Lib.debug.print_to_log then
-        Print_Table(args, "Pipes.Interface.Process_Command args")
-    end
-    
-    if args.command == "Read" then
-        Pipes.Schedule_Read(args.pipe_name, args.access_id, args.continuous)
-
-    elseif args.command == "Write" then
-        Pipes.Schedule_Write(args.pipe_name, args.access_id, args.message)
-
-    elseif args.command == "WriteSpecial" then    
-        -- Handle special commands.
-        -- Note: if the command not recognized, it just gets sent as-is.
-        if args.message == "package.path" then
-            -- Want to write out the current package.path.
-            args.message = "package.path:"..package.path
-        end        
-        -- Pass to the scheduler.
-        Pipes.Schedule_Write(args.pipe_name, args.access_id, args.message) 
-
-    elseif args.command == "CancelReads" then
-        Pipes.Deschedule_Reads(args.pipe_name)
-
-    elseif args.command == "CancelWrites" then
-        Pipes.Deschedule_Writes(args.pipe_name)
-
-    elseif args.command == "Check" then    
-        -- Check if a pipe is connected.
-    
-        local success = pcall(Pipes.Connect_Pipe, args.pipe_name)
-        -- Translate to strings that match read/write returns.
-        local message
-        if success then
-            message = "SUCCESS"
-        else
-            message = "ERROR"
-        end
-        -- Send back to md.
-        if type(args.callback) == "string" then
-            L.Raise_Signal('pipeCheck_complete_'..args.callback, message)
-        end
-
-    elseif args.command == "Close" then
-        Pipes.Close_Pipe(args.pipe_name)
-        
-    elseif args.command == "SuppressPausedReads" then
-        Pipes.Set_Suppress_Paused_Reads(args.pipe_name, true)
-
-    elseif args.command == "UnsuppressPausedReads" then
-        Pipes.Set_Suppress_Paused_Reads(args.pipe_name, false)
-    end
-end
-
-
-  -- Immediately initialize so the interface starts up on require()
-  Init()
-
-  return Pipes, Init
+    return Pipes, Init
 end)

@@ -8,11 +8,11 @@ from importlib import machinery
 import traceback
 import win32api
 import winerror
-from .Modules.logging_utils import setup_main_logging, shutdown_logging
-from .Modules.handlers import signal_handler, exception_hook, DEVELOPER_MODE
-from .Modules.server_process import Server_Process
-from .Modules.config import parse_args, load_permissions, setup_paths, check_permission, permissions_path
-from .Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
+from X4_Python_Pipe_Server.Modules.logging_utils import setup_main_logging, shutdown_logging
+from X4_Python_Pipe_Server.Modules.handlers import signal_handler, exception_hook, DEVELOPER_MODE
+from X4_Python_Pipe_Server.Modules.server_process import Server_Process
+from X4_Python_Pipe_Server.Modules.config import parse_args, load_permissions, setup_paths, check_permission, permissions_path
+from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
 
 VERSION = '2.2.0'
 PIPE_NAME = 'x4_python_host'

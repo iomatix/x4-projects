@@ -97,9 +97,10 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
 
         local max_attempts = 3
         local delay = 1 -- seconds
-
+        local attempt_counter = 0
         for attempt = 0, max_attempts, 1 do
-            if Lib.debug.print_to_log then DebugError(("Attempt %d to open pipes for '%s'"):format(attempt, name)) end
+            attempt_counter = attempt_counter + 1
+            if Lib.debug.print_to_log then DebugError(("Attempt %d to open pipes for '%s'"):format(attempt_counter, name)) end
             local pipe_write = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
             local pipe_read = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
 
@@ -110,7 +111,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
             else
                 if pipe_write then pipe_write:close() end
                 if pipe_read then pipe_read:close() end
-                if attempt < max_attempts then
+                if attempt_counter < max_attempts then
                     if Lib.debug.print_to_log then DebugError(("Retrying in %d seconds..."):format(delay)) end
                     os.execute("ping 127.0.0.1 -n " .. delay + 1 .. " >nul") -- Sleep for delay seconds
                 else

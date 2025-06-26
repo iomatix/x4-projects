@@ -103,6 +103,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
             if Lib.debug.print_to_log then DebugError(("Attempt %d to open pipes for '%s'"):format(attempt_counter, name)) end
             local pipe_write = winpipe.open_pipe(M.prefix .. name .. "_in", "w")
             local pipe_read = winpipe.open_pipe(M.prefix .. name .. "_out", "r")
+            if Lib.debug.print_to_log then DebugError(("Client tried open pipes for '%s': write='%s', read='%s'"):format(name, pipe_write and pipe_write.name or "nil", pipe_read and pipe_read.name or "nil")) end
 
             if pipe_write and pipe_read then
                 p.write_file = pipe_write.write_file

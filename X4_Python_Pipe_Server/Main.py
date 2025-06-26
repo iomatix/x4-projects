@@ -229,14 +229,14 @@ def run_server(args: argparse.Namespace) -> None:
                 threading.Thread(target=pipe_client_test, args=(args,), daemon=True).start()
 
             logger.info("Connecting to pipe...")
-            pipe.Connect()
+            pipe.connect()
             logger.info("Pipe connected, awaiting messages")         
 
             x4_root: Optional[Path] = None
 
             # Message loop
             while True:
-                msg = pipe.Read()
+                msg = pipe.read()
                 logger.debug(f"Received raw message: {msg!r}")
 
                 if msg == 'ping':
@@ -309,7 +309,7 @@ def run_server(args: argparse.Namespace) -> None:
         finally:
             if pipe:
                 try:
-                    pipe.Close()
+                    pipe.close()
                 except Exception:
                     pass
             if shutdown:
@@ -360,9 +360,9 @@ def pipe_client_test(args: argparse.Namespace) -> None:
     logger.debug(f"pipe_client_test sending package.path: {package_path!r}")
 
     pipe = Pipe_Client(PIPE_NAME)
-    pipe.Write(f"package.path:{package_path}")
-    pipe.Write(f"modules:{Path(args.module).as_posix()};")
-    pipe.Read()
+    pipe.write(f"package.path:{package_path}")
+    pipe.write(f"modules:{Path(args.module).as_posix()};")
+    pipe.read()
 
 
 def main() -> None:

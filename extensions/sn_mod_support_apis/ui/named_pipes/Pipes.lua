@@ -96,7 +96,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
         end
 
         local max_attempts = 3
-        local delay = 1 -- seconds
+        local delay = 3 -- seconds
         local attempt_counter = 0
         for attempt = 0, max_attempts, 1 do
             attempt_counter = attempt_counter + 1

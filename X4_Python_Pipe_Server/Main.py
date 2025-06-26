@@ -18,7 +18,7 @@ from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garba
 # Manages the server lifecycle, including pipe setup, module loading, and process management.
 
 # Version and constants
-VERSION = '2.1.2'
+VERSION = '2.2.0'
 PIPE_NAME = 'x4_python_host'
 
 # Configure root logger

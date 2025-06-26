@@ -292,9 +292,9 @@ static const luaL_Reg pipefile_methods[] = {
     {NULL,NULL}
 };
 
-static const luaL_Reg winpipe_funs[] = {
+static const struct luaL_Reg winpipe_functions[] = {
     {"open_pipe", l_open_pipe},
-    {NULL,NULL}
+    {NULL, NULL}
 };
 
 #ifdef __cplusplus
@@ -310,7 +310,7 @@ extern "C" {
         lua_pop(L, 1);
 
         // export module functions
-        luaL_newlib(L, winpipe_funs);
+        luaL_newlib(L, winpipe_functions);
         return 1;
     }
 

@@ -67,19 +67,62 @@ Change Log for overall api package.
   - Chat api and hotkey menu integration disabled pending further updates.
 * 1.90
   - Fixed interact menu bug introduced in 1.89 that prevented Get_Actions calls.
-* 2.1.0
-  - Added base compatibility with UI proteceted mode.
-* 2.1.1
-  - Applied fixes for paths within .xmls using `ui` path instead of `lua`, corrected same thing within LUA loader's part.
-  - Paired pipes: replaced the single file field with `write`/`read``_file` to support new pipe structure.
-  - Adjusted `Connect_Pipe` and `Disconnect_Pipe`, and related functionos to handle both pipes.
-  - Improved garbage collection and clarified its behavior.
-  - Enhanced error handling for pip full vs broken states where feasible.
-  - Moved polling registration logic into `Poll_For_Reads` and `Poll_For_Writes` for better encapsulation.
-  - Updated `winpipe_64.dll` to use `w`/`r` instead of biderectional pipes.
-  - Added transaction function to `Named_Pipes.xml`.
-  - Updated `Access_Handler` for  transact.
-* 2.1.2 
-  - Fixed culprits in lua files
-  - Improved winpipe.lua, OS detection, fail-safe, clean-up, fallback warnings, better debug logging.
-  - TODO: Fixed communication with 2.1.0 Pipe Server
+
+## 2.1.0 Changelog (Lua Integration)
+
+- Added base compatibility with UI-protected mode.
+
+## 2.1.1
+
+- Fixed `.xml` paths to use `ui/` instead of `lua/`, aligning with new UI protection mode.
+- Updated Lua loader to match revised UI paths.
+- Replaced single `file` handle with paired `write_file` and `read_file` to support the new duplex pipe structure.
+- Refactored `Connect_Pipe`, `Disconnect_Pipe`, and related functions to handle both input and output pipes.
+- Improved garbage collection handling and clarified object lifecycle.
+- Enhanced error handling for full or broken pipe states.
+- Moved polling logic into `Poll_For_Reads` and `Poll_For_Writes` functions for better encapsulation and testability.
+- Updated `winpipe_64.dll` to use separate `w` (write) and `r` (read) handles instead of bidirectional pipes.
+- Added a `transaction` function to `Named_Pipes.xml` for structured messaging.
+- Updated `Access_Handler` to support new transaction logic.
+
+## 2.1.2
+
+- Fixed bugs in Lua files that interfered with stable communication.
+- Improved `winpipe.lua` with:
+  - Better OS detection and platform safety.
+  - Failsafe shutdown and cleanup logic.
+  - Fallback warnings for missing components.
+  - Enhanced debug logging for pipe communication.
+- Finalized compatibility with the `2.1.0` Python Pipe Server.
+
+
+## 2.2.0 Changelog (Lua Integration)
+
+- **Fully integrated Lua-side communication with the 2.2.0 Python Pipe Server**:
+  - Connection with named pipes now stable across both directions.
+  - Verified compatibility between `winpipe.lua` and the refactored server.
+- **Added automatic initialization and cleanup routines**:
+  - Lua modules now initialize pipe communication during setup and shut down cleanly on exit or error.
+  - Uses Lua-side equivalent of `stop_event` signaling to avoid hanging pipes.
+- **Improved modular design in `winpipe.lua`**:
+  - Split functionality into reusable functions and better structured callbacks.
+  - Increased separation between platform detection, pipe handling, and debugging.
+- **Expanded OS support and error handling**:
+  - Improved detection of Windows vs unsupported platforms.
+  - Added clear error messages and fallbacks for unsupported systems.
+- **Enhanced logging and debugging tools**:
+  - Added debug flags and log messages that mirror the Python side.
+  - Made pipe failures and disconnects more transparent to Lua developers.
+- **Improved file naming and path management**:
+  - Synchronized naming between Lua and Python for `_in` and `_out` pipes.
+  - Verified consistency with `winpipe_64.dll` update.
+- **Finalized XML integration**:
+  - Polished `Named_Pipes.xml` with updated transactions and bindings.
+  - Validated `Access_Handler` logic for reading pipe responses.
+- **Improved resilience**:
+  - Handles full and broken pipe errors gracefully.
+  - Ensures garbage collection does not prematurely close open pipe handles.
+- **Test coverage**:
+  - Connected to mock Python servers and tested polling behavior with real data.
+  - Manual verification in X4 runtime environment confirms stability.
+

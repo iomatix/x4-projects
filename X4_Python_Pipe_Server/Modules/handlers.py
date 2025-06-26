@@ -1,7 +1,6 @@
 import sys
 import logging
 import traceback
-import signal
 from .logging_utils import shutdown_logging
 
 DEVELOPER_MODE = False

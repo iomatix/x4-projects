@@ -96,3 +96,4 @@ Change Log
   - Replaced `print` statements with structured logging.
   - Removed redundant code fragments and cleaned up duplicated code.
 - **General stability improvements and preparations** for further modularization and sandboxing.
+- **Modularization** Separated code from the Main.py into separate Modules.

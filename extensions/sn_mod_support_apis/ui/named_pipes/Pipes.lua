@@ -250,6 +250,11 @@ end
             local more = false
 
             for name, p in pairs(M.pipes) do
+                if not p.write_file then
+                    -- not connected yet, skip this pipe until connect succeeds
+                    goto continue_pipe
+                end
+
                 while not FIFO.Is_Empty(p.write_fifo) do
                     local cb_id, msg = unpack(FIFO.Next(p.write_fifo))
                     local ok, err = p.write_file:write_pipe(msg)
@@ -271,6 +276,7 @@ end
                         break
                     end
                 end
+                ::continue_pipe::
             end
 
             if not more then

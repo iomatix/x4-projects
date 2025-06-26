@@ -35,7 +35,7 @@ start "" "%X4_EXE_PATH%" -showfps -scriptlogfiles %SCRIPT_LOG_FILE_NAME% -logfil
 
 rem Summarize the actions taken
 echo.
-echo [+] Pipe Server started with %ERRORLEVEL% error level. 0 means it started successfully.
+echo [+] Pipe Server has started with %ERRORLEVEL% error level. 0 means it started successfully.
 echo [+] Game launched successfully. Check Steam client if it didn't start - Steam may ask for confirmation to run the game.
 
 rem tidy up

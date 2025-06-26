@@ -25,7 +25,7 @@ def parse_args():
     parser.add_argument('-x', '--x4-path', help='X4 installation path (test mode).')
     parser.add_argument('-m', '--module', help='Module path (test mode).')
     parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output.')
-    parser.add_argument('--no-restart', SPSSaction='store_true', help='Disable auto-restart.')
+    parser.add_argument('--no-restart', action='store_true', help='Disable auto-restart.')
 
     args = parser.parse_args()
 

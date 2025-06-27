@@ -550,9 +550,9 @@ class Release_Spec:
                     # Note: lua_interface.txt doesn't need this conversion
                     # for when it's required (which is why it exists), though
                     # will still undergo replacement later for when it requires
-                    # the actual lua files.
-                    if path.suffix == '.lua':
-                        # Goal is to replace "extensions.sn_simple_menu_api.lua.Custom_Options"
+                    # the actual lua files. After 7.0 within ui path.
+                    if path.suffix == '.ui':
+                        # Goal is to replace "extensions.sn_simple_menu_api.ui.Custom_Options"
                         # with "extensions.sn_simple_menu_api.Custom_Options", or similar.
                         old_string = self.Path_To_Lua_Require_Path(path)
                         new_string = self.Path_To_Lua_Require_Path(new_path)

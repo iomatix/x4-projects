@@ -21,7 +21,7 @@
       </conditions>
       <actions>
         <raise_lua_event name="'Lua_Loader.Load'"
-                         param="'extensions.sn_hotkey_collection.lua.Hotkeys'"/>
+                         param="'extensions.sn_hotkey_collection.ui.Hotkeys'"/>
       </actions>
     </cue>
 

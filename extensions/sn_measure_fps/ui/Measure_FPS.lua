@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_measure_fps.lua.Measure_FPS",function(require)
+Lua_Loader.define("extensions.sn_measure_fps.ui.Measure_FPS",function(require)
 --[[
 Bounces fps sample data back to md.
 ]]

@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_script_profiler.lua.Script_Profiler",function(require)
+Lua_Loader.define("extensions.sn_script_profiler.ui.Script_Profiler",function(require)
 --[[
 Lua side of performance profiling.
 

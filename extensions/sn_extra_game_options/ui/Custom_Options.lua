@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_extra_game_options.lua.Custom_Options",function(require)
+Lua_Loader.define("extensions.sn_extra_game_options.ui.Custom_Options",function(require)
 --[[
 This module implements a custom options menu entry, separate from the
 general api, for changing various behaviors of interest.

@@ -33,7 +33,7 @@ TODO: split apart md interface stuff from the menu plugin stuff,
 to reduce file sizes.
 ]]
 
-local isDebug = false -- Set to true for debug messages, false for production
+local isDebug = true -- Set to true for debug messages, false for production
 
 -- Set up any used ffi functions.
 local ffi = require("ffi")
@@ -92,12 +92,12 @@ local menu = nil
 -- Takes the row,col of the activated widget, and an optional new value
 -- for that widget.
 -- TODO: think about this more.
-local function Raise_Signal(name, value)
+function L.Raise_Signal(name, value)
     if isDebug then DebugError("[Hotkey.Interface] Raise_Signal: Signalling " .. tostring(name) .. " with value: " .. tostring(value)) end -- Debug: Log signal trigger
     AddUITriggeredEvent("Hotkey", name, value)
 end
 
-local function Init()
+function L.Init()
     if isDebug then DebugError("[Hotkey.Interface] Init: Starting initialization") end -- Debug: Log initialization start
     -- Set up ui linkage to listen for text entry state changes.
     -- (Goal is to suppress hotkeys when entering text.)
@@ -123,7 +123,7 @@ local function Init()
     -- Signal to md that a reload event occurred.
     -- This will also trigger md to send over its stored list of
     -- player assigned keys.
-    Raise_Signal("reloaded")
+    L.Raise_Signal("reloaded")
     if isDebug then DebugError("[Hotkey.Interface] Init: Signalled reloaded") end -- Debug: Log reloaded signal
 
     -- Run the menu init stuff.
@@ -150,7 +150,7 @@ function L.onEvent_directtextinput(some_userdata, char_entered)
 
     -- Signal md to suppress hotkeys, if not already disabled.
     if not L.alarm_pending then
-        Raise_Signal("disable")
+        L.Raise_Signal("disable")
         L.alarm_pending = true
         if isDebug then DebugError("[Hotkey.Interface] onEvent_directtextinput: Signalled disable, set alarm_pending to true") end -- Debug: Log disable signal and alarm state
     end
@@ -163,7 +163,7 @@ end
 function L.Reenable_Hotkeys()
     --if isDebug then DebugError("directtextinput event timed out; ending disable")
     if isDebug then DebugError("[Hotkey.Interface] Reenable_Hotkeys: Alarm timed out, reenabling hotkeys") end -- Debug: Log hotkey reenable
-    Raise_Signal("enable")
+    L.Raise_Signal("enable")
     L.alarm_pending = false
     if isDebug then DebugError("[Hotkey.Interface] Reenable_Hotkeys: Signalled enable, set alarm_pending to false") end -- Debug: Log enable signal and alarm state
 end
@@ -184,7 +184,7 @@ function L.Process_Message(_, message)
         if isDebug then DebugError("[Hotkey.Interface] Process_Message: Prefixed event " .. tostring(i) .. ": " .. tostring(events[i])) end -- Debug: Log event prefixing
     end
     -- Send back.
-    Raise_Signal("handle_events", events)
+    L.Raise_Signal("handle_events", events)
     if isDebug then DebugError("[Hotkey.Interface] Process_Message: Signalled handle_events with " .. tostring(#events) .. " events") end -- Debug: Log handle_events signal
 end
 
@@ -256,7 +256,7 @@ function L.Write_Player_Keys()
     -- Args are attached to the player component object.
     SetNPCBlackboard(L.player_id, "$hotkey_api_player_keys_from_lua", L.player_action_keys)
     if isDebug then DebugError("[Hotkey.Interface] Write_Player_Keys: Set $hotkey_api_player_keys_from_lua blackboard") end -- Debug: Log blackboard set
-    Raise_Signal("Store_Player_Keys")
+    L.Raise_Signal("Store_Player_Keys")
     if isDebug then DebugError("[Hotkey.Interface] Write_Player_Keys: Signalled Store_Player_Keys") end -- Debug: Log signal
     
     --Lib.Print_Table(L.player_action_keys, "Write_Player_Keys player_action_keys")
@@ -475,7 +475,7 @@ function L.Menu_Closed(menu)
     end
     -- DebugError("Menu closed: "..tostring(menu.name))
     if isDebug then DebugError("[Hotkey.Interface] Menu_Closed: Signalling Menu_Closed for: " .. tostring(menu.name)) end -- Debug: Log menu close signal
-    Raise_Signal("Menu_Closed", menu.name)
+    L.Raise_Signal("Menu_Closed", menu.name)
     -- TODO: in practice, some menu closures might get missed.
     --  Can maybe check all menu open states, and indicate if they
     --  are all closed at the time (to recover from bad information).
@@ -495,7 +495,7 @@ function L.Menu_Opened(menu)
     end
     -- DebugError("Menu opened: "..tostring(menu.name))
     if isDebug then DebugError("[Hotkey.Interface] Menu_Opened: Signalling Menu_Opened for: " .. tostring(menu.name)) end -- Debug: Log menu open signal
-    Raise_Signal("Menu_Opened", menu.name)
+    L.Raise_Signal("Menu_Opened", menu.name)
 end
 
 -- This is called when menus are minimized in Helper.
@@ -507,7 +507,7 @@ function L.Menu_Minimized(menu)
     end
     --if isDebug then DebugError("Menu minimized: "..tostring(menu.name))
     if isDebug then DebugError("[Hotkey.Interface] Menu_Minimized: Signalling Menu_Closed for: " .. tostring(menu.name)) end -- Debug: Log menu minimize signal
-    Raise_Signal("Menu_Closed", menu.name)
+    L.Raise_Signal("Menu_Closed", menu.name)
 end
 
 -- This is called when menus are restored (unminimized) in Helper.
@@ -519,7 +519,7 @@ function L.Menu_Restored(menu)
     end
     -- DebugError("Menu restored: "..tostring(menu.name))
     if isDebug then DebugError("[Hotkey.Interface] Menu_Restored: Signalling Menu_Opened for: " .. tostring(menu.name)) end -- Debug: Log menu restore signal
-    Raise_Signal("Menu_Opened", menu.name)
+    L.Raise_Signal("Menu_Opened", menu.name)
 end
 -- TODO: a timed check to occasionally go through all the menus and
 -- verify which are open/closed, just incase there is a problem above
@@ -965,7 +965,7 @@ function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputs
     if isDebug then DebugError("[Hotkey.Interface] remapInput_wrapped: Updated input " .. tostring(input_index) .. " for action ID: " .. tostring(menu.remapControl.controlcode)) end -- Debug: Log input update
         
     -- Signal lua to update if the combo changed.
-    Raise_Signal("Update_Key", {
+    L.Raise_Signal("Update_Key", {
         id      = action_keys.id,
         new_key = new_combo,
         old_key = old_combo,
@@ -1184,5 +1184,6 @@ Possibly adding new keys:
     b) patch menu.remapInput to catch user assignments.
 ]]
 
-return nil,Init
+if isDebug then DebugError("[Hotkey.Interface] Returning Init: " .. tostring(L.Init)) end
+return nil, L.Init
 end)

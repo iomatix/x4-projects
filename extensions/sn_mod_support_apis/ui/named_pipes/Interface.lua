@@ -97,7 +97,7 @@ writing and reading functions are shown here.
     }
     -- Called once on load: registers event handlers, clears state, and
     -- performs an initial probe to open read+write handles on the pipe.
-    local function Init()
+    function L.Init()
         -- 1) Listen for Process_Command events from MD.
         if not __pipe_callback_registered then
             RegisterEvent("pipeProcessCommand", my_function)
@@ -235,7 +235,7 @@ writing and reading functions are shown here.
     end
 
     -- Immediately initialize so the interface starts up on require()
-    Init()
+    L.Init()
 
-    return Pipes, Init
+    return Pipes, L.Init
 end)

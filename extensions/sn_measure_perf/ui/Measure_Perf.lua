@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_better_target_monitor.lua.Target_Monitor",function(require)
+Lua_Loader.define("extensions.sn_better_target_monitor.ui.Target_Monitor",function(require)
 --[[
 Lua side of performance profiling.
 ]]
@@ -76,7 +76,7 @@ end
         completed.
 
 ]]
---local Lib = require("extensions.sn_mod_support_apis.lua.simple_menu.Library")
+--local Lib = require("extensions.sn_mod_support_apis.ui.simple_menu.Library")
 
 --[[
 local menu = {

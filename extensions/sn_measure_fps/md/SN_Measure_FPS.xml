@@ -14,7 +14,7 @@
     </conditions>
     <actions>
       <raise_lua_event name="'Lua_Loader.Load'"
-                       param="'extensions.sn_measure_fps.lua.Measure_FPS'"/>
+                       param="'extensions.sn_measure_fps.ui.Measure_FPS'"/>
     </actions>
   </cue>
   

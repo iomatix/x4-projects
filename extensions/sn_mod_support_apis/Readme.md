@@ -260,7 +260,7 @@ There are three components to this API:
 
 * Lua Pipe API
 
-  The lower level support for X4 to use named pipes is located in Named_Pipes.lua.
+  The lower level support for X4 to use named pipes is located in Named_Pipes.ui.
   Basic pipe usage can ignore this level in favor of the MD api.
   Advanced usage may want to use this api directly.
 

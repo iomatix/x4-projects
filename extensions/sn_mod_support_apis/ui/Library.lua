@@ -9,7 +9,7 @@ TODO:
 -- Table to hold lib functions.
 local L = {}
 
-local isDebug = false -- Set to false in production to disable debug messages.
+local isDebug = true -- Set to false in production to disable debug messages.
 
 -- Retrieve a vanilla game menu by name.
 function L.Get_Egosoft_Menu(name)

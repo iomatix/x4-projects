@@ -54,7 +54,7 @@
       </conditions>
       <actions>
         <raise_lua_event name="'Lua_Loader.Load'"
-                         param="'extensions.sn_extra_game_options.lua.Custom_Options'"/>
+                         param="'extensions.sn_extra_game_options.ui.Custom_Options'"/>
       </actions>
     </cue>
 

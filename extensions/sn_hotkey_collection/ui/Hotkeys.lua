@@ -1,4 +1,4 @@
-Lua_Loader.define("extensions.sn_hotkey_collection.lua.Hotkeys",function(require)
+Lua_Loader.define("extensions.sn_hotkey_collection.ui.Hotkeys",function(require)
 --[[
     Lua side of hotkey api, for doing things only lua can do.
 ]]

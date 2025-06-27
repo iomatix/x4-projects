@@ -1,8 +1,8 @@
-Lua_Loader.define("extensions.sn_better_target_monitor.lua.Target_Monitor",function(require)
+Lua_Loader.define("extensions.sn_better_target_monitor.ui.Target_Monitor",function(require)
 ------------------------------------------------------------------------------
 --[[
-    The high level of the monitor is handled in monitors.lua.
-    Specific details on what text is displayed are handled in targetmonitor.lua.
+    The high level of the monitor is handled in monitors.ui.
+    Specific details on what text is displayed are handled in targetmonitor.ui.
 
     The GetTargetMonitorDetails function handles selection of which text
     to show on which rows. By wrapping it, text can be modified.

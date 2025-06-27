@@ -7,5 +7,5 @@ release files.
 
 Lua_Loader.define("extensions.sn_better_target_monitor.lua_interface",function(require)
 	-- TODO: Need to determine if we need to Init this
-	return require("extensions.sn_better_target_monitor.lua.Target_Monitor")
+	return require("extensions.sn_better_target_monitor.ui.Target_Monitor")
 end)

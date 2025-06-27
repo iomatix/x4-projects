@@ -13,7 +13,7 @@
     </conditions>
     <actions>
       <raise_lua_event name="'Lua_Loader.Load'"
-                       param="'extensions.sn_measure_perf.lua.Measure_Perf'"/>
+                       param="'extensions.sn_measure_perf.ui.Measure_Perf'"/>
     </actions>
   </cue>
   

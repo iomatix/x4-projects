@@ -33,6 +33,8 @@ TODO: split apart md interface stuff from the menu plugin stuff,
 to reduce file sizes.
 ]]
 
+local isDebug = false -- Set to true for debug messages, false for production
+
 -- Set up any used ffi functions.
 local ffi = require("ffi")
 local C = ffi.C

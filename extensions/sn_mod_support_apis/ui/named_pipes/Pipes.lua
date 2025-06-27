@@ -46,7 +46,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     -- Pipe Manager Object
     ------------------------------------------------------------------------------
     local M = {
-        prefix = "\\.\\pipe\\",
+        prefix = "\\\\.\\pipe\\",
         pipes = {},
         _reading = false,
         _writing = false

@@ -76,6 +76,8 @@ writing and reading functions are shown here.
     - Optional, lua function to call, taking one argument.
 ]]
 
+    isDebug = false -- Set to true for debug messages, false for production
+
     -- Set up any used ffi functions.
     local ffi = require("ffi")
     local C = ffi.C
@@ -100,39 +102,39 @@ writing and reading functions are shown here.
         if not __pipe_callback_registered then
             RegisterEvent("pipeProcessCommand", my_function)
             __pipe_callback_registered = true
-            DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler") -- Debug: Log event registration
+            if isDebug then DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler") end -- Debug: Log event registration
         end
 
         -- 2) Compute and cache the player-specific blackboard key.
         L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
-        DebugError("[Pipes.Interface] Init: Cached player ID: " .. tostring(L.player_id)) -- Debug: Log player ID caching
+        if isDebug then DebugError("[Pipes.Interface] Init: Cached player ID: " .. tostring(L.player_id)) end -- Debug: Log player ID caching
 
         -- 3) Clear any leftover arguments in the player blackboard.
         SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-        DebugError("[Pipes.Interface] Init: Cleared pipe_api_args from player blackboard") -- Debug: Log blackboard clearing
+        if isDebug then DebugError("[Pipes.Interface] Init: Cleared pipe_api_args from player blackboard") end -- Debug: Log blackboard clearing
 
         -- 4) Notify the Python server that the Lua interface is reloaded.
         Lib.Raise_Signal('reloaded')
-        DebugError("[Pipes.Interface] Init: Raised reloaded signal") -- Debug: Log reload signal
+        if isDebug then DebugError("[Pipes.Interface] Init: Raised reloaded signal") end -- Debug: Log reload signal
 
         -- 5) Enqueue a dummy Read to force the client to open the read handle.
         Pipes.Schedule_Read("x4_python_host", "init_probe", false)
-        DebugError("[Pipes.Interface] Init: Scheduled dummy read for x4_python_host, callback: init_probe") -- Debug: Log dummy read
+        if isDebug then DebugError("[Pipes.Interface] Init: Scheduled dummy read for x4_python_host, callback: init_probe") end -- Debug: Log dummy read
 
         -- 6) Enqueue a dummy Write to force the client to open the write handle.
         Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
-        DebugError("[Pipes.Interface] Init: Scheduled dummy write for x4_python_host, callback: init_probe, message: ping") -- Debug: Log dummy write
+        if isDebug then DebugError("[Pipes.Interface] Init: Scheduled dummy write for x4_python_host, callback: init_probe, message: ping") end -- Debug: Log dummy write
 
         -- 7) Explicitly attempt Connect_Pipe to expedite the handshake.
         pcall(Pipes.Connect_Pipe, "x4_python_host")
-        DebugError("[Pipes.Interface] Init: Attempted Connect_Pipe for x4_python_host") -- Debug: Log connect attempt
+        if isDebug then DebugError("[Pipes.Interface] Init: Attempted Connect_Pipe for x4_python_host") end -- Debug: Log connect attempt
     end
 
     -- Get args from the player blackboard, and return the next entry.
     function L.Get_Next_Args()
         -- If the list of queued args is empty, grab more from md.
         if #L.queued_args == 0 then
-            DebugError("[Pipes.Interface] Get_Next_Args: Queued args empty, fetching from blackboard") -- Debug: Log fetching args
+            if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Queued args empty, fetching from blackboard") end -- Debug: Log fetching args
             -- Args are attached to the player component object.
             local args_list = GetNPCBlackboard(L.player_id, "$pipe_api_args")
 
@@ -140,23 +142,23 @@ writing and reading functions are shown here.
             for i, v in ipairs(args_list) do
                 table.insert(L.queued_args, v)
             end
-            DebugError("[Pipes.Interface] Get_Next_Args: Fetched " .. tostring(#args_list) .. " args from blackboard") -- Debug: Log number of args fetched
+            if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Fetched " .. tostring(#args_list) .. " args from blackboard") end -- Debug: Log number of args fetched
 
             -- Clear the md var by writing nil.
             SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-            DebugError("[Pipes.Interface] Get_Next_Args: Cleared pipe_api_args from blackboard") -- Debug: Log blackboard clearing
+            if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Cleared pipe_api_args from blackboard") end -- Debug: Log blackboard clearing
         end
-        -- DebugError("num args: "..tostring(#L.queued_args))
+        -- if isDebug then DebugError("num args: "..tostring(#L.queued_args))
 
         -- Pop the first table entry.
         local args = table.remove(L.queued_args, 1)
-        DebugError("[Pipes.Interface] Get_Next_Args: Popped args: " .. Print_Table(args)) -- Debug: Log popped args
+        if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Popped args: " .. Print_Table(args)) end -- Debug: Log popped args
 
         -- Check args for any 0 entries on bool fields, convert to false.
         for _, field in ipairs(L.bool_fields) do
             if args[field] == 0 then
                 args[field] = false
-                DebugError("[Pipes.Interface] Get_Next_Args: Converted field " .. field .. " to false for args") -- Debug: Log boolean conversion
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Converted field " .. field .. " to false for args") end -- Debug: Log boolean conversion
             end
         end
 
@@ -167,7 +169,7 @@ writing and reading functions are shown here.
     -- When this is signalled, there may be multiple commands queued.
     function L.Process_Command()
         local args = L.Get_Next_Args()
-        DebugError("[Pipes.Interface] Process_Command: Processing command: " .. tostring(args.command) .. ", pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id)) -- Debug: Log command processing start
+        if isDebug then DebugError("[Pipes.Interface] Process_Command: Processing command: " .. tostring(args.command) .. ", pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id)) end -- Debug: Log command processing start
 
         if Lib.debug.print_to_log then
             Print_Table(args, "Pipes.Interface.Process_Command args")
@@ -175,11 +177,11 @@ writing and reading functions are shown here.
 
         if args.command == "Read" then
             Pipes.Schedule_Read(args.pipe_name, args.access_id, args.continuous)
-            DebugError("[Pipes.Interface] Process_Command: Scheduled read for pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id) .. ", continuous: " .. tostring(args.continuous)) -- Debug: Log read scheduling
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Scheduled read for pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id) .. ", continuous: " .. tostring(args.continuous)) end -- Debug: Log read scheduling
 
         elseif args.command == "Write" then
             Pipes.Schedule_Write(args.pipe_name, args.access_id, args.message)
-            DebugError("[Pipes.Interface] Process_Command: Scheduled write for pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id) .. ", message: " .. tostring(args.message)) -- Debug: Log write scheduling
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Scheduled write for pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id) .. ", message: " .. tostring(args.message)) end -- Debug: Log write scheduling
 
         elseif args.command == "WriteSpecial" then
             -- Handle special commands.
@@ -187,19 +189,19 @@ writing and reading functions are shown here.
             if args.message == "package.path" then
                 -- Want to write out the current package.path.
                 args.message = "package.path:" .. package.path
-                DebugError("[Pipes.Interface] Process_Command: Modified WriteSpecial message to: " .. tostring(args.message)) -- Debug: Log WriteSpecial message modification
+                if isDebug then DebugError("[Pipes.Interface] Process_Command: Modified WriteSpecial message to: " .. tostring(args.message)) end -- Debug: Log WriteSpecial message modification
             end
             -- Pass to the scheduler.
             Pipes.Schedule_Write(args.pipe_name, args.access_id, args.message)
-            DebugError("[Pipes.Interface] Process_Command: Scheduled WriteSpecial for pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id) .. ", message: " .. tostring(args.message)) -- Debug: Log WriteSpecial scheduling
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Scheduled WriteSpecial for pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id) .. ", message: " .. tostring(args.message)) end -- Debug: Log WriteSpecial scheduling
 
         elseif args.command == "CancelReads" then
             Pipes.Deschedule_Reads(args.pipe_name)
-            DebugError("[Pipes.Interface] Process_Command: Cancelled reads for pipe: " .. tostring(args.pipe_name)) -- Debug: Log read cancellation
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Cancelled reads for pipe: " .. tostring(args.pipe_name)) end -- Debug: Log read cancellation
 
         elseif args.command == "CancelWrites" then
             Pipes.Deschedule_Writes(args.pipe_name)
-            DebugError("[Pipes.Interface] Process_Command: Cancelled writes for pipe: " .. tostring(args.pipe_name)) -- Debug: Log write cancellation
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Cancelled writes for pipe: " .. tostring(args.pipe_name)) end -- Debug: Log write cancellation
 
         elseif args.command == "Check" then
             -- Check if a pipe is connected.
@@ -211,24 +213,24 @@ writing and reading functions are shown here.
             else
                 message = "ERROR"
             end
-            DebugError("[Pipes.Interface] Process_Command: Check pipe: " .. tostring(args.pipe_name) .. ", result: " .. tostring(message)) -- Debug: Log check result
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Check pipe: " .. tostring(args.pipe_name) .. ", result: " .. tostring(message)) end -- Debug: Log check result
             -- Send back to md.
             if type(args.callback) == "string" then
                 L.Raise_Signal('pipeCheck_complete_' .. args.callback, message)
-                DebugError("[Pipes.Interface] Process_Command: Raised signal pipeCheck_complete_" .. tostring(args.callback) .. " with message: " .. tostring(message)) -- Debug: Log check signal
+                if isDebug then DebugError("[Pipes.Interface] Process_Command: Raised signal pipeCheck_complete_" .. tostring(args.callback) .. " with message: " .. tostring(message)) end -- Debug: Log check signal
             end
 
         elseif args.command == "Close" then
             Pipes.Close_Pipe(args.pipe_name)
-            DebugError("[Pipes.Interface] Process_Command: Closed pipe: " .. tostring(args.pipe_name)) -- Debug: Log pipe closure
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Closed pipe: " .. tostring(args.pipe_name)) end -- Debug: Log pipe closure
 
         elseif args.command == "SuppressPausedReads" then
             Pipes.Set_Suppress_Paused_Reads(args.pipe_name, true)
-            DebugError("[Pipes.Interface] Process_Command: Enabled suppress paused reads for pipe: " .. tostring(args.pipe_name)) -- Debug: Log suppress enable
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Enabled suppress paused reads for pipe: " .. tostring(args.pipe_name)) end -- Debug: Log suppress enable
 
         elseif args.command == "UnsuppressPausedReads" then
             Pipes.Set_Suppress_Paused_Reads(args.pipe_name, false)
-            DebugError("[Pipes.Interface] Process_Command: Disabled suppress paused reads for pipe: " .. tostring(args.pipe_name)) -- Debug: Log suppress disable
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: Disabled suppress paused reads for pipe: " .. tostring(args.pipe_name)) end -- Debug: Log suppress disable
         end
     end
 

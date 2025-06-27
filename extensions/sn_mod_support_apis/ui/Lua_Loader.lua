@@ -64,36 +64,38 @@ Lua_Loader = {}
 
 local modules = {}
 
+local isDebug = false -- Set to false in production to disable debug messages
+
 local function Send_Priority_Ready()
     --DebugError("LUA Loader API: Signalling 'Lua_Loader, Priority_Ready'")
-    DebugError("[Lua_Loader] Send_Priority_Ready: Signalling Priority_Ready") -- Debug: Log Priority_Ready signal
+   if isDebug then DebugError("[Lua_Loader] Send_Priority_Ready: Signalling Priority_Ready") end -- Debug: Log Priority_Ready signal
     -- Send a ui signal, telling all md cues to rerun.
     AddUITriggeredEvent("Lua_Loader", "Priority_Ready")
 end
 
 local function Send_Ready()
     --DebugError("LUA Loader API: Signalling 'Lua_Loader, Ready'")
-    DebugError("[Lua_Loader] Send_Ready: Signalling Ready") -- Debug: Log Ready signal
+   if isDebug then DebugError("[Lua_Loader] Send_Ready: Signalling Ready") end -- Debug: Log Ready signal
     -- Send a ui signal, telling all md cues to rerun.
     AddUITriggeredEvent("Lua_Loader", "Ready")
 end
 
 local function IsWhitelistedInProtectedUI(name)
-    DebugError("[Lua_Loader] IsWhitelistedInProtectedUI: Checking if module " .. tostring(name) .. " is whitelisted") -- Debug: Log whitelist check
+   if isDebug then DebugError("[Lua_Loader] IsWhitelistedInProtectedUI: Checking if module " .. tostring(name) .. " is whitelisted") end -- Debug: Log whitelist check
     local is_whitelisted = name == "ffi" or name == "utf8"
-    DebugError("[Lua_Loader] IsWhitelistedInProtectedUI: Module " .. tostring(name) .. " is whitelisted: " .. tostring(is_whitelisted)) -- Debug: Log whitelist result
+   if isDebug then DebugError("[Lua_Loader] IsWhitelistedInProtectedUI: Module " .. tostring(name) .. " is whitelisted: " .. tostring(is_whitelisted)) end -- Debug: Log whitelist result
     return is_whitelisted
 end
 
 local function IsReserved(name)
-    DebugError("[Lua_Loader] IsReserved: Checking if module " .. tostring(name) .. " is reserved") -- Debug: Log reserved check
+   if isDebug then DebugError("[Lua_Loader] IsReserved: Checking if module " .. tostring(name) .. " is reserved") end -- Debug: Log reserved check
     local is_reserved = name ~= nil and type(name) == "string" and (name == "bit" or name == "Color" or name == "coroutine" or name == "debug" or name == "ffi" or name == "math" or name == "Matrix" or name == "package" or name == "Rotation" or name == "string" or name == "table" or name == "utf8" or name == "Vector" or name == "_G" or string.find(name, "^jit%."))
-    DebugError("[Lua_Loader] IsReserved: Module " .. tostring(name) .. " is reserved: " .. tostring(is_reserved)) -- Debug: Log reserved result
+   if isDebug then DebugError("[Lua_Loader] IsReserved: Module " .. tostring(name) .. " is reserved: " .. tostring(is_reserved)) end -- Debug: Log reserved result
     return is_reserved
 end
 
 local function Lua_Loader_Require_Helper(name, methodName, requestorName)
-    DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Attempting to require module: " .. tostring(name) .. ", called by: " .. tostring(methodName) .. ", requestor: " .. tostring(requestorName)) -- Debug: Log require attempt
+   if isDebug then DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Attempting to require module: " .. tostring(name) .. ", called by: " .. tostring(methodName) .. ", requestor: " .. tostring(requestorName)) end -- Debug: Log require attempt
     if type(name) ~= "string" then
         error("Invalid call to "..methodName..". Given name must be a string but is '"..type(name).."''")
     end
@@ -103,12 +105,12 @@ local function Lua_Loader_Require_Helper(name, methodName, requestorName)
 
     local module = modules[name]
     if module == nil then
-        DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Module " .. tostring(name) .. " not found in modules table") -- Debug: Log module not found
+       if isDebug then DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Module " .. tostring(name) .. " not found in modules table") end -- Debug: Log module not found
         return false
     end
 
     local status = module.status
-    DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Module " .. tostring(name) .. " status: " .. tostring(status)) -- Debug: Log module status
+   if isDebug then DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Module " .. tostring(name) .. " status: " .. tostring(status)) end -- Debug: Log module status
 
     if status ~= "defined" then
         if status == "executing" then
@@ -123,21 +125,21 @@ local function Lua_Loader_Require_Helper(name, methodName, requestorName)
     end
 
     local moduleInit = module.init
-    DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Module " .. tostring(name) .. " found, returning exports and init function") -- Debug: Log successful module retrieval
+   if isDebug then DebugError("[Lua_Loader] Lua_Loader_Require_Helper: Module " .. tostring(name) .. " found, returning exports and init function") end -- Debug: Log successful module retrieval
     return true, module.exports, module.init
 end
 
 local function on_Load_Lua_File(_, file_path)
-    DebugError("[Lua_Loader] on_Load_Lua_File: Attempting to load file: " .. tostring(file_path)) -- Debug: Log file load attempt
+   if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Attempting to load file: " .. tostring(file_path)) end -- Debug: Log file load attempt
     -- First look for our modules
     local success, exports, init = Lua_Loader_Require_Helper(file_path, "Lua_Loader.Load")
 
     if success then
         if init ~= nil and type(init) == "function" then
             init()
-            DebugError("[Lua_Loader] on_Load_Lua_File: Initialized module: " .. tostring(file_path)) -- Debug: Log module initialization
+           if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Initialized module: " .. tostring(file_path)) end -- Debug: Log module initialization
         end
-        DebugError("[Lua_Loader] on_Load_Lua_File: Successfully loaded module: " .. tostring(file_path)) -- Debug: Log successful module load
+       if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Successfully loaded module: " .. tostring(file_path)) end -- Debug: Log successful module load
     else
         local localPackage = package
         local packagePath = nil
@@ -147,7 +149,7 @@ local function on_Load_Lua_File(_, file_path)
             local packagePath = localPackage.path
 
             local customPackagePath = "?.txt"
-            DebugError("[Lua_Loader] on_Load_Lua_File: Setting package.path to " .. tostring(customPackagePath) .. " for file: " .. tostring(file_path)) -- Debug: Log package path change
+           if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Setting package.path to " .. tostring(customPackagePath) .. " for file: " .. tostring(file_path)) end -- Debug: Log package path change
             -- Since lua files cannot be distributed with steam workshop stuff,
             -- but txt can, use a trick to change the package search path to
             -- also look for txt files (which can be put on steam).
@@ -157,57 +159,57 @@ local function on_Load_Lua_File(_, file_path)
         end
     
         success, exports = pcall(baseRequire, file_path)
-        DebugError("[Lua_Loader] on_Load_Lua_File: Require attempt for " .. tostring(file_path) .. " resulted in success: " .. tostring(success)) -- Debug: Log require result
+       if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Require attempt for " .. tostring(file_path) .. " resulted in success: " .. tostring(success)) end -- Debug: Log require result
 
         -- Restore package.path to the original value
         if localPackage ~= nil then
             localPackage.path = packagePath
-            DebugError("[Lua_Loader] on_Load_Lua_File: Restored package.path to " .. tostring(packagePath) .. " for file: " .. tostring(file_path)) -- Debug: Log package path restoration
+           if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Restored package.path to " .. tostring(packagePath) .. " for file: " .. tostring(file_path)) end -- Debug: Log package path restoration
         elseif not IsWhitelistedInProtectedUI(file_path) and success and exports == nil then
             local protectedUIError = "require(\""..file_path.."\") : Only whitelisted modules are allowed in Protected UI Mode."
-            DebugError("[Lua_Loader] on_Load_Lua_File: " .. protectedUIError) -- Debug: Log Protected UI error
-            DebugError("If you see the following error, then a lua file for a mod has failed to load:\n"..protectedUIError.."\n\nIf you're confident about the source of ALL of your mods then you will need to disable Protected UI Mode for this mod to function.\n\nAdvice for mod developers: You need to load your mod via 'ui.xml' and update your lua files to using Lua_Loader.define(\""..file_path.."\", function(require)\n    ...\nend)")
+           if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: " .. protectedUIError) end -- Debug: Log Protected UI error
+           DebugError("If you see the following error, then a lua file for a mod has failed to load:\n"..protectedUIError.."\n\nIf you're confident about the source of ALL of your mods then you will need to disable Protected UI Mode for this mod to function.\n\nAdvice for mod developers: You need to load your mod via 'ui.xml' and update your lua files to using Lua_Loader.define(\""..file_path.."\", function(require)\n    ...\nend)")
         end
 
         if not success then
-            DebugError("[Lua_Loader] on_Load_Lua_File: Failed to load file: " .. tostring(file_path) .. ", error: " .. tostring(exports)) -- Debug: Log load failure
+           if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Failed to load file: " .. tostring(file_path) .. ", error: " .. tostring(exports)) end -- Debug: Log load failure
             error(exports)
         end
 
-        DebugError("[Lua_Loader] on_Load_Lua_File: Successfully loaded file: " .. tostring(file_path)) -- Debug: Log successful file load
+       if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Successfully loaded file: " .. tostring(file_path)) end -- Debug: Log successful file load
         -- Generic signal that the load completed, for use when there
         -- are inter-lua dependencies (to control loading order).
     end
 
     AddUITriggeredEvent("Lua_Loader", "Loaded "..file_path)
-    DebugError("[Lua_Loader] on_Load_Lua_File: Signalled Loaded for file: " .. tostring(file_path)) -- Debug: Log Loaded signal
+   if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Signalled Loaded for file: " .. tostring(file_path)) end -- Debug: Log Loaded signal
 end
 
 local function Init()
     --DebugError("LUA Loader API: Running Init()")
-    DebugError("[Lua_Loader] Init: Starting initialization") -- Debug: Log initialization start
+   if isDebug then DebugError("[Lua_Loader] Init: Starting initialization") end -- Debug: Log initialization start
     -- Hook up an md->lua signal.
     RegisterEvent("Lua_Loader.Load", on_Load_Lua_File)
-    DebugError("[Lua_Loader] Init: Registered Lua_Loader.Load event") -- Debug: Log Load event registration
+   if isDebug then DebugError("[Lua_Loader] Init: Registered Lua_Loader.Load event") end -- Debug: Log Load event registration
     -- Listen to md side timing on when to send Ready signals.
     -- Priority ready is triggered on game start/load.
     RegisterEvent("Lua_Loader.Send_Priority_Ready", Send_Priority_Ready)
-    DebugError("[Lua_Loader] Init: Registered Lua_Loader.Send_Priority_Ready event") -- Debug: Log Priority_Ready event registration
+   if isDebug then DebugError("[Lua_Loader] Init: Registered Lua_Loader.Send_Priority_Ready event") end -- Debug: Log Priority_Ready event registration
     RegisterEvent("Lua_Loader.Send_Ready", Send_Ready)
-    DebugError("[Lua_Loader] Init: Registered Lua_Loader.Send_Ready event") -- Debug: Log Ready event registration
+   if isDebug then DebugError("[Lua_Loader] Init: Registered Lua_Loader.Send_Ready event") end -- Debug: Log Ready event registration
     -- Also call the function once on ui reload itself, to catch /reloadui
     -- commands while the md is running.
     -- Only triggers priority ready; md will then signal Send_Ready for
     -- the second part.
     Send_Priority_Ready()
-    DebugError("[Lua_Loader] Init: Triggered initial Priority_Ready signal") -- Debug: Log initial Priority_Ready signal
+   if isDebug then DebugError("[Lua_Loader] Init: Triggered initial Priority_Ready signal") end -- Debug: Log initial Priority_Ready signal
 end
 
 Lua_Loader.IsReserved = IsReserved
 Lua_Loader.IsWhitelistedInProtectedUI = IsWhitelistedInProtectedUI
 
 function Lua_Loader.require(name)
-    DebugError("[Lua_Loader] require: Attempting to require module: " .. tostring(name)) -- Debug: Log require attempt
+   if isDebug then DebugError("[Lua_Loader] require: Attempting to require module: " .. tostring(name)) end -- Debug: Log require attempt
     local success, exports, init = Lua_Loader_Require_Helper(name, "Lua_Loader.require()")
 
     if init == nil then
@@ -218,17 +220,17 @@ function Lua_Loader.require(name)
     if success then
         if init ~= nil and type(init) == "function" then
             init()
-            DebugError("[Lua_Loader] require: Initialized module: " .. tostring(name)) -- Debug: Log module initialization
+           if isDebug then DebugError("[Lua_Loader] require: Initialized module: " .. tostring(name)) end -- Debug: Log module initialization
         end
-        DebugError("[Lua_Loader] require: Successfully required module: " .. tostring(name)) -- Debug: Log successful require
+       if isDebug then DebugError("[Lua_Loader] require: Successfully required module: " .. tostring(name)) end -- Debug: Log successful require
     else
         local base_success, base_exports = pcall(baseRequire, name)
-        DebugError("[Lua_Loader] require: Base require attempt for " .. tostring(name) .. " resulted in success: " .. tostring(base_success)) -- Debug: Log base require result
+       if isDebug then DebugError("[Lua_Loader] require: Base require attempt for " .. tostring(name) .. " resulted in success: " .. tostring(base_success)) end -- Debug: Log base require result
         if not base_success then
-            DebugError("[Lua_Loader] require: Failed to require module: " .. tostring(name) .. ", error: " .. tostring(base_exports)) -- Debug: Log base require failure
+           if isDebug then DebugError("[Lua_Loader] require: Failed to require module: " .. tostring(name) .. ", error: " .. tostring(base_exports)) end -- Debug: Log base require failure
             error(base_exports)
         end
-        DebugError("[Lua_Loader] require: Successfully required module " .. tostring(name) .. " via base require") -- Debug: Log successful base require
+       if isDebug then DebugError("[Lua_Loader] require: Successfully required module " .. tostring(name) .. " via base require") end -- Debug: Log successful base require
         return base_exports
     end
 
@@ -237,49 +239,49 @@ end
 
 local baseRequire = require
 require = function(name)
-    DebugError("[Lua_Loader] require (global): Attempting to require module: " .. tostring(name)) -- Debug: Log global require attempt
+   if isDebug then DebugError("[Lua_Loader] require (global): Attempting to require module: " .. tostring(name)) end -- Debug: Log global require attempt
     local success, exports, init = Lua_Loader_Require_Helper(name, "Lua_Loader.require()")
     
     if not success then
         local base_success, base_exports = pcall(baseRequire, name)
-        DebugError("[Lua_Loader] require (global): Base require attempt for " .. tostring(name) .. " resulted in success: " .. tostring(base_success)) -- Debug: Log global base require result
+       if isDebug then DebugError("[Lua_Loader] require (global): Base require attempt for " .. tostring(name) .. " resulted in success: " .. tostring(base_success)) end -- Debug: Log global base require result
         if not base_success then
-            DebugError("[Lua_Loader] require (global): Failed to require module: " .. tostring(name) .. ", error: " .. tostring(base_exports)) -- Debug: Log global base require failure
+           if isDebug then DebugError("[Lua_Loader] require (global): Failed to require module: " .. tostring(name) .. ", error: " .. tostring(base_exports)) end -- Debug: Log global base require failure
             error(base_exports)
         end
-        DebugError("[Lua_Loader] require (global): Successfully required module " .. tostring(name) .. " via base require") -- Debug: Log successful global base require
+       if isDebug then DebugError("[Lua_Loader] require (global): Successfully required module " .. tostring(name) .. " via base require") end -- Debug: Log successful global base require
         return base_exports
     end
 
     if init ~= nil and type(init) == "function" then
         init()
-        DebugError("[Lua_Loader] require (global): Initialized module: " .. tostring(name)) -- Debug: Log global module initialization
+       if isDebug then DebugError("[Lua_Loader] require (global): Initialized module: " .. tostring(name)) end -- Debug: Log global module initialization
     end
 
-    DebugError("[Lua_Loader] require (global): Successfully required module: " .. tostring(name)) -- Debug: Log successful global require
+   if isDebug then DebugError("[Lua_Loader] require (global): Successfully required module: " .. tostring(name)) end -- Debug: Log successful global require
     return exports
 end
 
 function Lua_Loader.define(name, moduleFunction)
-    DebugError("[Lua_Loader] define: Defining module: " .. tostring(name)) -- Debug: Log module definition start
+   if isDebug then DebugError("[Lua_Loader] define: Defining module: " .. tostring(name)) end -- Debug: Log module definition start
     if type(name) ~= "string" then
-        DebugError("[Lua_Loader] define: Invalid module name type: " .. tostring(type(name))) -- Debug: Log invalid name type
+       if isDebug then DebugError("[Lua_Loader] define: Invalid module name type: " .. tostring(type(name))) end -- Debug: Log invalid name type
         error("Invalid call to Lua_Loader.define(). Given name must be a string but is '"..type(name).."''")
     end
     if type(moduleFunction) ~= "function" then
-        DebugError("[Lua_Loader] define: Invalid module function type: " .. tostring(type(moduleFunction))) -- Debug: Log invalid function type
+       if isDebug then DebugError("[Lua_Loader] define: Invalid module function type: " .. tostring(type(moduleFunction))) end -- Debug: Log invalid function type
         error("Invalid call to Lua_Loader.define(). Given moduleFunction must be a function but is '"..type(moduleFunction).."''")
     end
 
     local module = modules[name]
     if module ~= nil then
-        DebugError("Redefining the module '"..name.."'")
+            DebugError("Redefining the module '"..name.."'") 
     elseif package ~= nil then
         if IsReserved(name) then
-            DebugError("Redefining the build-in module '"..name.."'")
+           DebugError("Redefining the build-in module '"..name.."'")
         end
     elseif IsWhitelistedInProtectedUI(name) then
-        DebugError("Redefining the build-in module '"..name.."'")
+       DebugError("Redefining the build-in module '"..name.."'")
     end
     
     module = {
@@ -287,7 +289,7 @@ function Lua_Loader.define(name, moduleFunction)
         exports = nil,
         init = nil,
     }
-    DebugError("[Lua_Loader] define: Created module entry for: " .. tostring(name) .. ", status: executing") -- Debug: Log module entry creation
+   if isDebug then DebugError("[Lua_Loader] define: Created module entry for: " .. tostring(name) .. ", status: executing") end -- Debug: Log module entry creation
 
     modules[name] = module
 
@@ -296,47 +298,47 @@ function Lua_Loader.define(name, moduleFunction)
     local moduleFunctionRan = false
 
     local function moduleRequire(name)
-        DebugError("[Lua_Loader] moduleRequire: Requiring dependency: " .. tostring(name) .. " for module: " .. tostring(ambientName)) -- Debug: Log dependency require
+       if isDebug then DebugError("[Lua_Loader] moduleRequire: Requiring dependency: " .. tostring(name) .. " for module: " .. tostring(ambientName)) end -- Debug: Log dependency require
         if moduleFunctionRan then
-            DebugError("[Lua_Loader] moduleRequire: Invalid require call outside define for module: " .. tostring(ambientName)) -- Debug: Log invalid require call
+           if isDebug then DebugError("[Lua_Loader] moduleRequire: Invalid require call outside define for module: " .. tostring(ambientName)) end -- Debug: Log invalid require call
             error("Invalid call to require() function in Lua_Loader.define(function(require). Call to moduleRequire method outside of define in '"..ambientName.."''")
         end
 
         local success, exports, init = Lua_Loader_Require_Helper(name, "require() function in Lua_Loader.define(function(require)", ambientName)
-        DebugError("[Lua_Loader] moduleRequire: Require helper for dependency " .. tostring(name) .. " in module " .. tostring(ambientName) .. " succeeded: " .. tostring(success)) -- Debug: Log dependency require result
+       if isDebug then DebugError("[Lua_Loader] moduleRequire: Require helper for dependency " .. tostring(name) .. " in module " .. tostring(ambientName) .. " succeeded: " .. tostring(success)) end -- Debug: Log dependency require result
 
         if not success then
             local base_success, base_exports = pcall(baseRequire, name)
-            DebugError("[Lua_Loader] moduleRequire: Base require for dependency " .. tostring(name) .. " in module " .. tostring(ambientName) .. " succeeded: " .. tostring(base_success)) -- Debug: Log base require result
+           if isDebug then DebugError("[Lua_Loader] moduleRequire: Base require for dependency " .. tostring(name) .. " in module " .. tostring(ambientName) .. " succeeded: " .. tostring(base_success)) end -- Debug: Log base require result
             if not base_success then
-                DebugError("[Lua_Loader] moduleRequire: Failed to require dependency: " .. tostring(name) .. ", error: " .. tostring(base_exports)) -- Debug: Log base require failure
+               if isDebug then DebugError("[Lua_Loader] moduleRequire: Failed to require dependency: " .. tostring(name) .. ", error: " .. tostring(base_exports)) end -- Debug: Log base require failure
                 error(base_exports)
             end
-            DebugError("[Lua_Loader] moduleRequire: Successfully required dependency " .. tostring(name) .. " via base require") -- Debug: Log successful base require
+           if isDebug then DebugError("[Lua_Loader] moduleRequire: Successfully required dependency " .. tostring(name) .. " via base require") end -- Debug: Log successful base require
             return base_exports
         end
 
         if module.status == "executing" and init ~= nil and type(init) == "function" then
             dependencies = dependencies or {}
             table.insert(dependencies, init)
-            DebugError("[Lua_Loader] moduleRequire: Added dependency init function for " .. tostring(name) .. " to module " .. tostring(ambientName)) -- Debug: Log dependency addition
+           if isDebug then DebugError("[Lua_Loader] moduleRequire: Added dependency init function for " .. tostring(name) .. " to module " .. tostring(ambientName)) end -- Debug: Log dependency addition
         end
 
-        DebugError("[Lua_Loader] moduleRequire: Successfully required dependency: " .. tostring(name) .. " for module: " .. tostring(ambientName)) -- Debug: Log successful dependency require
+       if isDebug then DebugError("[Lua_Loader] moduleRequire: Successfully required dependency: " .. tostring(name) .. " for module: " .. tostring(ambientName)) end -- Debug: Log successful dependency require
         return exports, init
     end
 
     local success, exports, initFunction = pcall(moduleFunction, moduleRequire)
-    DebugError("[Lua_Loader] define: Module function execution for " .. tostring(name) .. " succeeded: " .. tostring(success)) -- Debug: Log module function execution
+   if isDebug then DebugError("[Lua_Loader] define: Module function execution for " .. tostring(name) .. " succeeded: " .. tostring(success)) end -- Debug: Log module function execution
     
     -- Prevent future 'require' from attempting to update the dependency list.
     module.status = "executed"
-    DebugError("[Lua_Loader] define: Set module " .. tostring(name) .. " status to executed") -- Debug: Log status update to executed
+   if isDebug then DebugError("[Lua_Loader] define: Set module " .. tostring(name) .. " status to executed") end -- Debug: Log status update to executed
 
     if not success then
         module.status = "faulted"
         module.exports = exports
-        DebugError("[Lua_Loader] define: Failed to define module " .. tostring(name) .. ", error: " .. tostring(exports)) -- Debug: Log module definition failure
+       if isDebug then DebugError("[Lua_Loader] define: Failed to define module " .. tostring(name) .. ", error: " .. tostring(exports)) end -- Debug: Log module definition failure
         error("Failed to define module '"..name.."' due because of the following error: "..exports)
     end
 
@@ -344,7 +346,7 @@ function Lua_Loader.define(name, moduleFunction)
         local err = "Invalid call to Lua_Loader.define(). Second return must be nil or the init function but is '"..type(initFunction).."''"
         module.status = "faulted"
         module.exports = err
-        DebugError("[Lua_Loader] define: Invalid init function type for module " .. tostring(name) .. ": " .. tostring(type(initFunction))) -- Debug: Log invalid init function
+       if isDebug then DebugError("[Lua_Loader] define: Invalid init function type for module " .. tostring(name) .. ": " .. tostring(type(initFunction))) end -- Debug: Log invalid init function
         error("Failed to define module '"..name.."' due because of the following error: "..err)
     end
 
@@ -356,15 +358,15 @@ function Lua_Loader.define(name, moduleFunction)
                 if dependencies ~= nil then
                     for _, dependencyInit in ipairs(dependencies) do
                         dependencyInit()
-                        DebugError("[Lua_Loader] define: Initialized dependency for module: " .. tostring(name)) -- Debug: Log dependency initialization
+                       if isDebug then DebugError("[Lua_Loader] define: Initialized dependency for module: " .. tostring(name)) end -- Debug: Log dependency initialization
                     end
                 end
                 if initFunction ~= nil and type(initFunction) == "function" then
                     initFunction()
-                    DebugError("[Lua_Loader] define: Initialized module: " .. tostring(name)) -- Debug: Log module initialization
+                   if isDebug then DebugError("[Lua_Loader] define: Initialized module: " .. tostring(name)) end -- Debug: Log module initialization
                 end
                 initialized = true
-                DebugError("[Lua_Loader] define: Module " .. tostring(name) .. " fully initialized") -- Debug: Log full initialization
+               if isDebug then DebugError("[Lua_Loader] define: Module " .. tostring(name) .. " fully initialized") end -- Debug: Log full initialization
             end
         end
     end
@@ -372,7 +374,7 @@ function Lua_Loader.define(name, moduleFunction)
     module.exports = exports
     module.init = init
     module.status = "defined"
-    DebugError("[Lua_Loader] define: Successfully defined module: " .. tostring(name) .. ", status: defined") -- Debug: Log successful module definition
+   if isDebug then DebugError("[Lua_Loader] define: Successfully defined module: " .. tostring(name) .. ", status: defined") end -- Debug: Log successful module definition
 
     return exports, init
 end

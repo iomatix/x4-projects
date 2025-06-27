@@ -31,4 +31,4 @@ function L.Get_Sample()
 end
 
 return nil,Init
-)
+end)

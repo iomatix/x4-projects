@@ -27,7 +27,10 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     -- Required dependencies
     ------------------------------------------------------------------------------
     local ffi = require("ffi")
-    local socket = require("socket")
+    local socket = nil
+    -- try-catch style workaround
+    pcall(function() socket = require("socket") end)
+
     ffi.cdef [[ bool IsGamePaused(void); ]]
 
     local winpipe = require("extensions.sn_mod_support_apis.ui.c_library.winpipe")
@@ -132,7 +135,9 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
                 if p.read_file then
                     p.read_file:close_pipe()
                 end
-                socket.sleep(3)
+                if socket then 
+                 socket.sleep(3)
+                end
             end
         end
 

@@ -27,6 +27,7 @@ local function ensure_callback_table(pipe)
         on_disconnect = {},
         on_failure = {}
     }
+    DebugError("[NamedPipeClient] ensure_callback_table: Initialized or retrieved callback table for pipe: " .. tostring(pipe)) -- Debug: Log callback table initialization
     return client_callbacks[pipe]
 end
 
@@ -40,24 +41,28 @@ local function register_pipe_signals(pipe)
 
     -- Ensure we don't register multiple times for the same pipe
     Lib.Subscribe("pipeRead_complete_" .. pipe, function(data)
+        DebugError("[NamedPipeClient] register_pipe_signals: Read complete for pipe: " .. tostring(pipe) .. ", data: " .. tostring(data)) -- Debug: Log read complete signal
         for _, f in ipairs(cb.on_read) do
             pcall(f, data)
         end
     end)
 
     Lib.Subscribe("pipeWrite_complete_" .. pipe, function(status)
+        DebugError("[NamedPipeClient] register_pipe_signals: Write complete for pipe: " .. tostring(pipe) .. ", status: " .. tostring(status)) -- Debug: Log write complete signal
         for _, f in ipairs(cb.on_write) do
             pcall(f, status)
         end
     end)
 
     Lib.Subscribe(pipe .. "_disconnected", function()
+        DebugError("[NamedPipeClient] register_pipe_signals: Disconnect signal for pipe: " .. tostring(pipe)) -- Debug: Log disconnect signal
         for _, f in ipairs(cb.on_disconnect) do
             pcall(f)
         end
     end)
 
     Lib.Subscribe("pipe_failed_" .. pipe, function()
+        DebugError("[NamedPipeClient] register_pipe_signals: Failure signal for pipe: " .. tostring(pipe)) -- Debug: Log failure signal
         for _, f in ipairs(cb.on_failure) do
             pcall(f)
         end
@@ -72,6 +77,7 @@ end
 function M.OnRead(pipe, callback)
     local cb = ensure_callback_table(pipe)
     table.insert(cb.on_read, callback)
+    DebugError("[NamedPipeClient] OnRead: Registered read callback for pipe: " .. tostring(pipe)) -- Debug: Log read callback registration
 end
 
 -------------------------------------------------------------------------------
@@ -82,6 +88,7 @@ end
 function M.OnWrite(pipe, callback)
     local cb = ensure_callback_table(pipe)
     table.insert(cb.on_write, callback)
+    DebugError("[NamedPipeClient] OnWrite: Registered write callback for pipe: " .. tostring(pipe)) -- Debug: Log write callback registration
 end
 
 -------------------------------------------------------------------------------
@@ -92,6 +99,7 @@ end
 function M.OnFailure(pipe, callback)
     local cb = ensure_callback_table(pipe)
     table.insert(cb.on_failure, callback)
+    DebugError("[NamedPipeClient] OnFailure: Registered failure callback for pipe: " .. tostring(pipe)) -- Debug: Log failure callback registration
 end
 
 -------------------------------------------------------------------------------
@@ -102,6 +110,7 @@ end
 function M.OnDisconnect(pipe, callback)
     local cb = ensure_callback_table(pipe)
     table.insert(cb.on_disconnect, callback)
+    DebugError("[NamedPipeClient] OnDisconnect: Registered disconnect callback for pipe: " .. tostring(pipe)) -- Debug: Log disconnect callback registration
 end
 
 -------------------------------------------------------------------------------
@@ -109,10 +118,13 @@ end
 -------------------------------------------------------------------------------
 -- Connect to a named pipe
 function M.Connect(pipe)
-    if Pipes.Connect_Pipe(pipe) then
+    local success = Pipes.Connect_Pipe(pipe)
+    if success then
         register_pipe_signals(pipe)
+        DebugError("[NamedPipeClient] Connect: Successfully connected to pipe: " .. tostring(pipe)) -- Debug: Log successful connection
         return true
     end
+    DebugError("[NamedPipeClient] Connect: Failed to connect to pipe: " .. tostring(pipe)) -- Debug: Log connection failure
     return false
 end
 
@@ -122,6 +134,7 @@ end
 -- Disconnect from a named pipe
 function M.Disconnect(pipe)
     Pipes.Disconnect_Pipe(pipe)
+    DebugError("[NamedPipeClient] Disconnect: Disconnected pipe: " .. tostring(pipe)) -- Debug: Log disconnection
 end
 
 -------------------------------------------------------------------------------
@@ -131,6 +144,7 @@ end
 -- This will schedule the write operation.
 function M.Send(pipe, message)
     Pipes.Schedule_Write(pipe, pipe, message)
+    DebugError("[NamedPipeClient] Send: Scheduled write for pipe: " .. tostring(pipe) .. ", message: " .. tostring(message)) -- Debug: Log write scheduling
 end
 
 -------------------------------------------------------------------------------
@@ -140,6 +154,7 @@ end
 -- This will schedule the read operation.
 function M.Listen(pipe, continuous)
     Pipes.Schedule_Read(pipe, pipe, continuous)
+    DebugError("[NamedPipeClient] Listen: Scheduled read for pipe: " .. tostring(pipe) .. ", continuous: " .. tostring(continuous)) -- Debug: Log read scheduling
 end
 
 -------------------------------------------------------------------------------
@@ -149,6 +164,7 @@ end
 -- This will clear any pending reads and reset the pipe state.
 function M.Flush(pipe)
     Pipes.Flush_Pipe(pipe)
+    DebugError("[NamedPipeClient] Flush: Flushed read and write FIFOs for pipe: " .. tostring(pipe)) -- Debug: Log FIFO flush
 end
 
 -------------------------------------------------------------------------------
@@ -158,6 +174,7 @@ end
 -- This will prevent reads from being processed while the game is paused.
 function M.SetSuppressPausedReads(pipe, bool)
     Pipes.Set_Suppress_Paused_Reads(pipe, bool)
+    DebugError("[NamedPipeClient] SetSuppressPausedReads: Set suppress paused reads to " .. tostring(bool) .. " for pipe: " .. tostring(pipe)) -- Debug: Log suppress setting
 end
 
 -------------------------------------------------------------------------------
@@ -166,7 +183,9 @@ end
 -- Check if a named pipe is connected
 -- Returns true if the pipe is connected, false otherwise.
 function M.IsConnected(pipe)
-    return Pipes.Is_Connected(pipe)
+    local connected = Pipes.Is_Connected(pipe)
+    DebugError("[NamedPipeClient] IsConnected: Pipe " .. tostring(pipe) .. " connected: " .. tostring(connected)) -- Debug: Log connection status
+    return connected
 end
 
 -------------------------------------------------------------------------------
@@ -176,7 +195,7 @@ end
 -- This will remove all registered callbacks for the specified pipe.
 function M.ClearCallbacks(pipe)
     client_callbacks[pipe] = nil
+    DebugError("[NamedPipeClient] ClearCallbacks: Cleared all callbacks for pipe: " .. tostring(pipe)) -- Debug: Log callback clearing
 end
-
 
 return M

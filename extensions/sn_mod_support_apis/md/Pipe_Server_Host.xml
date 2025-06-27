@@ -91,7 +91,8 @@ Usage:
         cue="md.Named_Pipes.Write_Special" 
         param="table[
           $pipe = $Pipe_Name, 
-          $msg = 'package.path' ]"/>
+          $msg = 'package.path',
+          $is_server=true  ]"/>
       
       <!-- Announce the modules to start up. -->
       <include_actions ref="md.Pipe_Server_Host.Register_Modules_With_Server"/>                    
@@ -190,7 +191,8 @@ Usage:
           cue="md.Named_Pipes.Write" 
           param="table[
             $pipe = Server_Reader.$Pipe_Name, 
-            $msg = 'modules:'+$joined_modules ]"/>
+            $msg = 'modules:'+$joined_modules,
+            $is_server=true ]"/>
         
       </do_if>
     </actions>

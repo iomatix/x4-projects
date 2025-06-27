@@ -595,9 +595,17 @@ TODO:
       <set_value name="$pipe_name"    exact="event.param.$pipe" />
       <set_value name="$command"      exact="event.param.$command" />
       
+      <!-- Check if $is_server is provided, default to false for mod compatibility -->
+      <do_if value="event.param.$is_server?">
+        <set_value name="$is_server" exact="event.param.$is_server" />
+      </do_if>
+      <do_else>
+        <set_value name="$is_server" exact="false" />
+      </do_else>
+
       <!-- Callback defaults to null. -->
       <do_if value="event.param.$cue?">
-        <set_value name="$callback_cue"      exact="event.param.$cue" />
+        <set_value name="$callback_cue"     exact="event.param.$cue" />
       </do_if>
       <do_else>
         <set_value name="$callback_cue"      exact="null" />
@@ -640,14 +648,37 @@ TODO:
       -->
       <set_value name="$lua_signal" exact="'pipe'+ $command +'_complete_'+$access_id"/>
 
+      <!-- Determine pipe suffix based on $is_server and $command -->
+      <do_if value="$is_server">
+        <!-- Server logic: reverse suffixes -->
+        <do_if value="$command == 'Write'">
+          <set_value name="$pipe_suffix" exact="'_out'" />
+        </do_if>
+        <do_elseif value="$command == 'Read'">
+          <set_value name="$pipe_suffix" exact="'_in'" />
+        </do_elseif>
+      </do_if>
+      <do_else>
+        <!-- Mod logic: original suffixes -->
+        <do_if value="$command == 'Write'">
+          <set_value name="$pipe_suffix" exact="'_in'" />
+        </do_if>
+        <do_elseif value="$command == 'Read'">
+          <set_value name="$pipe_suffix" exact="'_out'" />
+        </do_elseif>
+      </do_else>
+
+      <!-- Construct full pipe name -->
+      <set_value name="$full_pipe_name" exact="$pipe_name + $pipe_suffix" />
+
       <!--Send the command.-->
       <signal_cue_instantly cue="Send_Command" param="table[
-                 $pipe_name  = $pipe_name,
-                 $command    = $command,
-                 $access_id  = $access_id,
-                 $message    = @event.param.$msg,
-                 $continuous = $continuous,
-                 ]" />
+                    $pipe_name  = $full_pipe_name,
+                    $command    = $command,
+                    $access_id  = $access_id,
+                    $message    = @event.param.$msg,
+                    $continuous = $continuous,
+                    ]" />
     </actions>
     
     <cues>

@@ -321,7 +321,8 @@ Notes on server access looping cues:
                           chance="$DebugChance" filter="general"/>
               <signal_cue_instantly 
                 cue="md.Named_Pipes.Write" 
-                param="table[$pipe=$Pipe_Name, $msg='ping', $cue=Ping_Callback]"/>
+                param="table[$pipe=$Pipe_Name, $msg='ping', $cue=Ping_Callback,
+                      $is_server=true ]"/>
             </actions>
           </cue>
           
@@ -435,7 +436,8 @@ Notes on server access looping cues:
             <actions>
               <signal_cue_instantly 
                 cue="md.Named_Pipes.Read" 
-                param="table[$pipe=$Pipe_Name, $cue=Read_Callback, $continuous=true]"/>
+                param="table[$pipe=$Pipe_Name, $cue=Read_Callback, $continuous=true,
+                      $is_server=true ]"/>
             </actions>
           </cue>
           

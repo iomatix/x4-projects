@@ -265,8 +265,10 @@ static int l_open_pipe(lua_State* L) {
 	DWORD flags = PIPE_READMODE_MESSAGE | PIPE_NOWAIT;
 	if (!SetNamedPipeHandleState(h, &flags, NULL, NULL)) {
 		DWORD err = GetLastError();
-		CloseHandle(h);
-		return push_win_error(L, "SetNamedPipeHandleState failed", err);
+
+        // Don't bail immediately on error, allow to block on read/write sometimes
+        // CloseHandle(h);
+		// return push_win_error(L, "SetNamedPipeHandleState failed", err);
 	}
 
 	// Allocate userdata and assign metatable

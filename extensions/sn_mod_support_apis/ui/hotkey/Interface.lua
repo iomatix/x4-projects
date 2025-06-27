@@ -81,48 +81,54 @@ local L = {
     alarm_id = "hotkey_directinput_timeout",
     -- If input currently disabled. Used to suppress some excess signals.
     alarm_pending = false,
-    }
-
+}
 
 -- Proxy for the gameoptions menu, linked further below.
 local menu = nil
-
 
 -- Signalling results from lua to md.
 -- Takes the row,col of the activated widget, and an optional new value
 -- for that widget.
 -- TODO: think about this more.
 local function Raise_Signal(name, value)
+    DebugError("[Hotkey.Interface] Raise_Signal: Signalling " .. tostring(name) .. " with value: " .. tostring(value)) -- Debug: Log signal trigger
     AddUITriggeredEvent("Hotkey", name, value)
 end
 
-
 local function Init()
-
+    DebugError("[Hotkey.Interface] Init: Starting initialization") -- Debug: Log initialization start
     -- Set up ui linkage to listen for text entry state changes.
     -- (Goal is to suppress hotkeys when entering text.)
-    L.scene            = getElement("Scene")
-    L.contract         = getElement("UIContract", L.scene)
-    registerForEvent("directtextinput"          , L.contract, L.onEvent_directtextinput)
+    L.scene = getElement("Scene")
+    L.contract = getElement("UIContract", L.scene)
+    registerForEvent("directtextinput", L.contract, L.onEvent_directtextinput)
+    DebugError("[Hotkey.Interface] Init: Registered directtextinput event") -- Debug: Log directtextinput registration
 
     -- MD triggered events.
     RegisterEvent("Hotkey.Update_Actions", L.Update_Actions)
+    DebugError("[Hotkey.Interface] Init: Registered Hotkey.Update_Actions event") -- Debug: Log Update_Actions registration
     RegisterEvent("Hotkey.Update_Player_Keys", L.Read_Player_Keys)
+    DebugError("[Hotkey.Interface] Init: Registered Hotkey.Update_Player_Keys event") -- Debug: Log Update_Player_Keys registration
     RegisterEvent("Hotkey.Update_Connection_Status", L.Update_Connection_Status)
+    DebugError("[Hotkey.Interface] Init: Registered Hotkey.Update_Connection_Status event") -- Debug: Log Update_Connection_Status registration
     RegisterEvent("Hotkey.Process_Message", L.Process_Message)
+    DebugError("[Hotkey.Interface] Init: Registered Hotkey.Process_Message event") -- Debug: Log Process_Message registration
     
     -- Cache the player component id.
     L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
+    DebugError("[Hotkey.Interface] Init: Cached player ID: " .. tostring(L.player_id)) -- Debug: Log player ID caching
     
     -- Signal to md that a reload event occurred.
     -- This will also trigger md to send over its stored list of
     -- player assigned keys.
     Raise_Signal("reloaded")
+    DebugError("[Hotkey.Interface] Init: Signalled reloaded") -- Debug: Log reloaded signal
 
     -- Run the menu init stuff.
     -- Disabled as of 7.0; TODO: needs an overhaul since the hotkey ui has
     -- drastically changed. (Explicit md defined hotkeys should still work.)
     --L.Init_Menu()
+    DebugError("[Hotkey.Interface] Init: Skipped Init_Menu (disabled)") -- Debug: Log Init_Menu skip
 end
 
 -------------------------------------------------------------------------------
@@ -131,6 +137,7 @@ end
 -- Handler for direct input key presses.
 -- Fires once for each key.
 function L.onEvent_directtextinput(some_userdata, char_entered)
+    DebugError("[Hotkey.Interface] onEvent_directtextinput: Caught directtextinput, char: " .. tostring(char_entered)) -- Debug: Log directtextinput event
     -- Note: to get number of vargs, use: select("#",...)
     -- This appears to receive 3 args according to the "...", but when trying
     -- to capture them only get 2 args.
@@ -143,18 +150,21 @@ function L.onEvent_directtextinput(some_userdata, char_entered)
     if not L.alarm_pending then
         Raise_Signal("disable")
         L.alarm_pending = true
+        DebugError("[Hotkey.Interface] onEvent_directtextinput: Signalled disable, set alarm_pending to true") -- Debug: Log disable signal and alarm state
     end
 
     -- Start or reset the timer.
     Time.Set_Alarm(L.alarm_id, L.direct_input_suppress_time, L.Reenable_Hotkeys)
+    DebugError("[Hotkey.Interface] onEvent_directtextinput: Set alarm " .. tostring(L.alarm_id) .. " for " .. tostring(L.direct_input_suppress_time) .. " seconds") -- Debug: Log alarm setting
 end
 
 function L.Reenable_Hotkeys()
     --DebugError("directtextinput event timed out; ending disable")
+    DebugError("[Hotkey.Interface] Reenable_Hotkeys: Alarm timed out, reenabling hotkeys") -- Debug: Log hotkey reenable
     Raise_Signal("enable")
     L.alarm_pending = false
+    DebugError("[Hotkey.Interface] Reenable_Hotkeys: Signalled enable, set alarm_pending to false") -- Debug: Log enable signal and alarm state
 end
-
 
 -------------------------------------------------------------------------------
 -- MD -> Lua signal handlers
@@ -162,41 +172,54 @@ end
 -- Process a pipe message, a series of matched hotkey event names
 -- semicolon separated.
 function L.Process_Message(_, message)
+    DebugError("[Hotkey.Interface] Process_Message: Processing message: " .. tostring(message)) -- Debug: Log message processing
     -- Split it.
     local events = Lib.Split_String_Multi(message, ";")
+    DebugError("[Hotkey.Interface] Process_Message: Split message into " .. tostring(#events) .. " events") -- Debug: Log event splitting
     -- Add '$' prefixes and return.
     for i, event in ipairs(events) do
         events[i] = "$"..event
+        DebugError("[Hotkey.Interface] Process_Message: Prefixed event " .. tostring(i) .. ": " .. tostring(events[i])) -- Debug: Log event prefixing
     end
     -- Send back.
     Raise_Signal("handle_events", events)
+    DebugError("[Hotkey.Interface] Process_Message: Signalled handle_events with " .. tostring(#events) .. " events") -- Debug: Log handle_events signal
 end
 
 -- Handle md pipe connection status update. Param is 0 or 1.
 function L.Update_Connection_Status(_, connected)
+    DebugError("[Hotkey.Interface] Update_Connection_Status: Received connection status: " .. tostring(connected)) -- Debug: Log connection status update
     -- Translate the 0 or 1 to false/true.
     if connected == 0 then 
         L.pipe_connected = false 
     else 
         L.pipe_connected = true 
     end
+    DebugError("[Hotkey.Interface] Update_Connection_Status: Set pipe_connected to " .. tostring(L.pipe_connected)) -- Debug: Log pipe_connected state
 end
 
 -- Handle md requests to update the action registry.
 -- Reads data from a player blackboard var.
 function L.Update_Actions()
+    DebugError("[Hotkey.Interface] Update_Actions: Reading action registry from blackboard") -- Debug: Log action registry read
     -- Args are attached to the player component object.
     local md_table = GetNPCBlackboard(L.player_id, "$hotkey_api_actions")
+    DebugError("[Hotkey.Interface] Update_Actions: Blackboard read result: " .. tostring(md_table)) -- Debug: Log blackboard read result
 
     -- Note: md may have sent several of these events on the same frame,
     -- in which case the blackboard var has just the args for the latest
     -- event, and later events processed will get nil.
     -- Skip those nil cases.
-    if not md_table then return end
+    if not md_table then 
+        DebugError("[Hotkey.Interface] Update_Actions: No action registry data found, skipping") -- Debug: Log nil blackboard skip
+        return 
+    end
     L.action_registry = md_table
+    DebugError("[Hotkey.Interface] Update_Actions: Updated action_registry") -- Debug: Log action registry update
 
     -- Clear the md var by writing nil.
     SetNPCBlackboard(L.player_id, "$hotkey_api_actions", nil)
+    DebugError("[Hotkey.Interface] Update_Actions: Cleared $hotkey_api_actions blackboard") -- Debug: Log blackboard clear
     
     --Lib.Print_Table(L.action_registry, "Update_Actions action_registry")
 end
@@ -204,15 +227,22 @@ end
 -- Read in the stored list of player action keys.
 -- Generally md will send this on init.
 function L.Read_Player_Keys()
+    DebugError("[Hotkey.Interface] Read_Player_Keys: Reading player action keys from blackboard") -- Debug: Log player keys read
     -- Args are attached to the player component object.
     local md_table = GetNPCBlackboard(L.player_id, "$hotkey_api_player_keys_from_md")
+    DebugError("[Hotkey.Interface] Read_Player_Keys: Blackboard read result: " .. tostring(md_table)) -- Debug: Log blackboard read result
     -- This shouldn't get getting nil values since the md init is
     -- sent just once, but play it safe.
-    if not md_table then return end
+    if not md_table then 
+        DebugError("[Hotkey.Interface] Read_Player_Keys: No player keys data found, skipping") -- Debug: Log nil blackboard skip
+        return 
+    end
     L.player_action_keys = md_table
+    DebugError("[Hotkey.Interface] Read_Player_Keys: Updated player_action_keys") -- Debug: Log player keys update
 
     -- Clear the md var by writing nil.
     SetNPCBlackboard(L.player_id, "$hotkey_api_player_keys_from_md", nil)
+    DebugError("[Hotkey.Interface] Read_Player_Keys: Cleared $hotkey_api_player_keys_from_md blackboard") -- Debug: Log blackboard clear
     
     --Lib.Print_Table(L.player_action_keys, "Read_Player_Keys player_action_keys")
 end
@@ -220,33 +250,35 @@ end
 -- Write to the list of player action keys to be stored in md.
 -- This could be integrated into remapInput, but kept separate for now.
 function L.Write_Player_Keys()
+    DebugError("[Hotkey.Interface] Write_Player_Keys: Writing player action keys to blackboard") -- Debug: Log player keys write
     -- Args are attached to the player component object.
     SetNPCBlackboard(L.player_id, "$hotkey_api_player_keys_from_lua", L.player_action_keys)
+    DebugError("[Hotkey.Interface] Write_Player_Keys: Set $hotkey_api_player_keys_from_lua blackboard") -- Debug: Log blackboard set
     Raise_Signal("Store_Player_Keys")
+    DebugError("[Hotkey.Interface] Write_Player_Keys: Signalled Store_Player_Keys") -- Debug: Log signal
     
     --Lib.Print_Table(L.player_action_keys, "Write_Player_Keys player_action_keys")
 end
-
-
 
 -------------------------------------------------------------------------------
 -- Menu setup.
 -- TODO: break into more init subfunctions for organization.
 
 function L.Init_Menu()
+    DebugError("[Hotkey.Interface] Init_Menu: Starting menu initialization") -- Debug: Log menu initialization start
     -- Look up the menu, store in this module's local.
     menu = Lib.Get_Egosoft_Menu("OptionsMenu")
+    DebugError("[Hotkey.Interface] Init_Menu: Retrieved OptionsMenu") -- Debug: Log menu retrieval
     
-    -- Patch displayOptions.
+    -- Patch displayControls.
     local ego_displayControls = menu.displayControls
+    DebugError("[Hotkey.Interface] Init_Menu: Patching displayControls") -- Debug: Log displayControls patch
     menu.displayControls = function(...)
-
-        -- Start by building the original manu.
-
+        DebugError("[Hotkey.Interface] displayControls: Called with args: " .. tostring(select("#", ...))) -- Debug: Log displayControls call
+        -- Start by building the original menu.
         -- Note that displayControls calls frame:display(), which would need
         -- to be called a second time after new rows are added, but leads
         -- to backend confusion.
-
         -- Since attempts to re-display after adding new rows lead to many
         -- debuglog errors when the menu closes (widgets still alive not
         -- having a table), the original display() can be suppressed by
@@ -257,43 +289,53 @@ function L.Init_Menu()
         local frame
         local frame_display
         menu.createOptionsFrame = function(...)
+            DebugError("[Hotkey.Interface] createOptionsFrame: Creating options frame") -- Debug: Log frame creation
             -- Build the frame.
             frame = ego_createOptionsFrame(...)
             -- Record its display function.
             frame_display = frame.display
             -- Replace it with a dummy.
             frame.display = function() return end
+            DebugError("[Hotkey.Interface] createOptionsFrame: Suppressed frame display") -- Debug: Log display suppression
             -- Return the edited frame to displayControls.
             return frame
-            end
+        end
 
         -- Record the prior selected option, since the below call clears it.
         local preselectOption = menu.preselectOption
+        DebugError("[Hotkey.Interface] displayControls: Recorded preselectOption: " .. tostring(preselectOption)) -- Debug: Log preselectOption
         -- Build the menu.
         ego_displayControls(...)
+        DebugError("[Hotkey.Interface] displayControls: Ran original displayControls") -- Debug: Log original displayControls call
 
         -- Reconnect the createOptionsFrame function, to avoid impacting
         -- other menu pages.
         menu.createOptionsFrame = ego_createOptionsFrame
+        DebugError("[Hotkey.Interface] displayControls: Restored createOptionsFrame") -- Debug: Log frame restoration
 
         -- Safety call to add in the new rows.
         local success, error = pcall(L.displayControls, preselectOption, ...)
         if not success then
             DebugError("displayControls error: "..tostring(error))
         end
+        DebugError("[Hotkey.Interface] displayControls: Custom displayControls call success: " .. tostring(success)) -- Debug: Log custom displayControls result
 
         -- Re-attach the original frame display, and call it.
         -- (Note: this method worked out great, much better than attempts
         -- to re-display after clearing scripts or whatever.)
         frame.display = frame_display
         frame:display()
+        DebugError("[Hotkey.Interface] displayControls: Restored and called frame display") -- Debug: Log frame display
     end
     
     -- Patch remapInput, which catches the player's new keys.
     local ego_remapInput = menu.remapInput
+    DebugError("[Hotkey.Interface] Init_Menu: Patching remapInput") -- Debug: Log remapInput patch
     menu.remapInput = function(...)
+        DebugError("[Hotkey.Interface] remapInput: Called with args: " .. tostring(select("#", ...))) -- Debug: Log remapInput call
         -- Hand off to ego function if this isn't a custom key.
         if menu.remapControl.controlcontext ~= "hotkey_api" then
+            DebugError("[Hotkey.Interface] remapInput: Non-hotkey_api context, calling original remapInput") -- Debug: Log non-hotkey_api context
             ego_remapInput(...)
             return
         end        
@@ -302,6 +344,7 @@ function L.Init_Menu()
         if not success then
             DebugError("remapInput error: "..tostring(error))
         end
+        DebugError("[Hotkey.Interface] remapInput: Custom remapInput call success: " .. tostring(success)) -- Debug: Log custom remapInput result
     end
     
     -- TODO: replace the event registration functions which select which
@@ -312,25 +355,26 @@ function L.Init_Menu()
     --    -- Args patterned off of config.input.directInputHookDefinitions.
     --    -- Just keyboard for now.
     --    ["keyboardInput"] = function (_, keycode) L.remapInput(1, keycode, 0) end,
-    --    }
+    --}
     --
     ---- Patch registration.
     --local ego_registerDirectInput = menu.registerDirectInput
     --menu.registerDirectInput = function()
     --    L.registerDirectInput(ego_registerDirectInput)
-    --    end
+    --}
     --
     ---- Patch unregistration.
     --local ego_unregisterDirectInput = menu.unregisterDirectInput
     --menu.unregisterDirectInput = function()
     --    L.unregisterDirectInput(ego_unregisterDirectInput)
-    --    end
+    --}
     
+    DebugError("[Hotkey.Interface] Init_Menu: Skipped input event handler patches") -- Debug: Log skipped input patches
 
     -- Listen for when menus open/close, to inform the md side what the
     -- current hotkey context is (eg. suppress space-based hotkeys while
     -- menus are open).
-    -- (Alternatively, can check this live by scanning all menus for
+        -- (Alternatively, can check this live by scanning all menus for
     -- the menu.shown flag being set and menu.minimized being false.)
 
     --[[
@@ -352,23 +396,14 @@ function L.Init_Menu()
         TODO: maybe revisit this to figure it out.
         For now, just ignore the menu.
     ]]
-
     -- Patch into Helper.clearMenu for closings.
     local ego_helper_clearMenu = Helper.clearMenu
+    DebugError("[Hotkey.Interface] Init_Menu: Patching Helper.clearMenu") -- Debug: Log clearMenu patch
     Helper.clearMenu = function(menu, ...)
+        DebugError("[Hotkey.Interface] clearMenu: Closing menu: " .. tostring(menu.name)) -- Debug: Log menu closing
         ego_helper_clearMenu(menu, ...)
         L.Menu_Closed(menu)
-        end
-    -- Unnecessary.
-    --local function patch_onCloseElement(menu)
-    --    local ego_onCloseElement = menu.onCloseElement
-    --    if ego_onCloseElement ~= nil then
-    --        menu.onCloseElement = function(...)
-    --            ego_onCloseElement(...)
-    --            L.Menu_Closed(menu)
-    --            end
-    --    end
-    --end
+    end
 
     -- Patch into all menu.showMenuCallback functions to catch when
     -- they open.  Two steps: patch existing menus, and patch helper
@@ -377,44 +412,52 @@ function L.Init_Menu()
     local function patch_showMenuCallback(menu)
         local ego_showMenuCallback = menu.showMenuCallback
         menu.showMenuCallback = function(...)
+            DebugError("[Hotkey.Interface] showMenuCallback: Opening menu: " .. tostring(menu.name)) -- Debug: Log menu opening
             ego_showMenuCallback(...)
             L.Menu_Opened(menu)
-            end
+        end
         -- These callbacks were registered to a 'show<name>' event, so update
         -- that registry.
         UnregisterEvent("show"..menu.name, ego_showMenuCallback)
         RegisterEvent("show"..menu.name, menu.showMenuCallback)
+        DebugError("[Hotkey.Interface] showMenuCallback: Patched showMenuCallback for menu: " .. tostring(menu.name)) -- Debug: Log callback patch
     end
 
-    -- Patch exiting menus.
+    -- Patch existing menus.
     for _, menu in ipairs(Menus) do
         patch_showMenuCallback(menu)
-        --patch_onCloseElement(menu)
     end
+    DebugError("[Hotkey.Interface] Init_Menu: Patched existing menus") -- Debug: Log existing menu patches
     -- Patch future menus.
     local ego_registerMenu = Helper.registerMenu
+    DebugError("[Hotkey.Interface] Init_Menu: Patching Helper.registerMenu") -- Debug: Log registerMenu patch
     Helper.registerMenu = function(menu, ...)
+        DebugError("[Hotkey.Interface] registerMenu: Registering menu: " .. tostring(menu.name)) -- Debug: Log menu registration
         -- Run helper function first to set up the menu's callback func.
         ego_registerMenu(menu, ...)
         -- Can now patch it.
         patch_showMenuCallback(menu)
-        --patch_onCloseElement(menu)
-        end
+        
+    end
 
     -- Also want to catch minimized menus.
     local ego_minimizeMenu = Helper.minimizeMenu
+    DebugError("[Hotkey.Interface] Init_Menu: Patching Helper.minimizeMenu") -- Debug: Log minimizeMenu patch
     Helper.minimizeMenu = function(menu, ...)
+        DebugError("[Hotkey.Interface] minimizeMenu: Minimizing menu: " .. tostring(menu.name)) -- Debug: Log menu minimizing
         ego_minimizeMenu(menu, ...)
         L.Menu_Minimized(menu)
-        end
+    end
     -- And restored menus.
     local ego_restoreMenu = Helper.restoreMenu
+    DebugError("[Hotkey.Interface] Init_Menu: Patching Helper.restoreMenu") -- Debug: Log restoreMenu patch
     Helper.restoreMenu = function(menu, ...)
+        DebugError("[Hotkey.Interface] restoreMenu: Restoring menu: " .. tostring(menu.name)) -- Debug: Log menu restoring
         ego_restoreMenu(menu, ...)
         L.Menu_Restored(menu)
-        end
+    end
     
-
+    DebugError("[Hotkey.Interface] Init_Menu: Completed menu initialization") -- Debug: Log menu initialization complete
 end
 
 -------------------------------------------------------------------------------
@@ -424,40 +467,58 @@ end
 -- generally be ignored here.
 -- This is called when menus are closed in Helper.
 function L.Menu_Closed(menu)
-    if menu.name == "TopLevelMenu" then return end
+    if menu.name == "TopLevelMenu" then 
+        DebugError("[Hotkey.Interface] Menu_Closed: Ignoring TopLevelMenu") -- Debug: Log ignored menu
+        return 
+    end
     --DebugError("Menu closed: "..tostring(menu.name))
+    DebugError("[Hotkey.Interface] Menu_Closed: Signalling Menu_Closed for: " .. tostring(menu.name)) -- Debug: Log menu close signal
     Raise_Signal("Menu_Closed", menu.name)
     -- TODO: in practice, some menu closures might get missed.
     --  Can maybe check all menu open states, and indicate if they
     --  are all closed at the time (to recover from bad information).
     -- Can scan all menus for .shown and not .minimized to see if
-    --  any are open.
+    -- any are open.
 end
 
 -- This is called when menus are opened in Helper.
 function L.Menu_Opened(menu)
-    if menu.name == "TopLevelMenu" then return end
-    if menu.name == "UserQuestionMenu" then return end
+    if menu.name == "TopLevelMenu" then 
+        DebugError("[Hotkey.Interface] Menu_Opened: Ignoring TopLevelMenu") -- Debug: Log ignored menu
+        return 
+    end
+    if menu.name == "UserQuestionMenu" then 
+        DebugError("[Hotkey.Interface] Menu_Opened: Ignoring UserQuestionMenu") -- Debug: Log ignored menu
+        return 
+    end
     --DebugError("Menu opened: "..tostring(menu.name))
+    DebugError("[Hotkey.Interface] Menu_Opened: Signalling Menu_Opened for: " .. tostring(menu.name)) -- Debug: Log menu open signal
     Raise_Signal("Menu_Opened", menu.name)
 end
 
 -- This is called when menus are minimized in Helper.
 -- Treats menu as closing for the md side.
 function L.Menu_Minimized(menu)
-    if menu.name == "TopLevelMenu" then return end
+    if menu.name == "TopLevelMenu" then 
+        DebugError("[Hotkey.Interface] Menu_Minimized: Ignoring TopLevelMenu") -- Debug: Log ignored menu
+        return 
+    end
     --DebugError("Menu minimized: "..tostring(menu.name))
+    DebugError("[Hotkey.Interface] Menu_Minimized: Signalling Menu_Closed for: " .. tostring(menu.name)) -- Debug: Log menu minimize signal
     Raise_Signal("Menu_Closed", menu.name)
 end
 
 -- This is called when menus are restored (unminimized) in Helper.
 -- Treats menu as opening for the md side.
 function L.Menu_Restored(menu)
-    if menu.name == "TopLevelMenu" then return end
+    if menu.name == "TopLevelMenu" then 
+        DebugError("[Hotkey.Interface] Menu_Restored: Ignoring TopLevelMenu") -- Debug: Log ignored menu
+        return 
+    end
     --DebugError("Menu restored: "..tostring(menu.name))
+    DebugError("[Hotkey.Interface] Menu_Restored: Signalling Menu_Opened for: " .. tostring(menu.name)) -- Debug: Log menu restore signal
     Raise_Signal("Menu_Opened", menu.name)
 end
-
 -- TODO: a timed check to occasionally go through all the menus and
 -- verify which are open/closed, just incase there is a problem above
 -- with missing an opened/closed signal, so that the api can recover.
@@ -491,31 +552,33 @@ end
 -- Fire it off.
 L.Input_Listener()
 ]]
-
-
 -- Patch to add custom keys to the control remap menu.
-function L.displayControls (preselectOption, optionParameter)
-    --DebugError("GameOptions.displayControls() called")
-
+function L.displayControls(preselectOption, optionParameter)
+    DebugError("[Hotkey.Interface] displayControls: Called with preselectOption: " .. tostring(preselectOption) .. ", optionParameter: " .. tostring(optionParameter)) -- Debug: Log function call
     -- Skip if the pipe is not connected, to avoid clutter for users that
     -- have this api installed but aren't using the server.
-    if not L.pipe_connected then return end
-
+    if not L.pipe_connected then 
+        DebugError("[Hotkey.Interface] displayControls: Pipe not connected, skipping") -- Debug: Log pipe not connected
+        return 
+    end
     -- TODO: skip if there are no actions available. For now, the
     -- stock example actions should always be present, so can skip this
     -- check.
 
     -- TODO: skip if hotkey menu items are disabled using an extension options
     -- debug flag, in case this code breaks the menu otherwise.
-
     -- For now, stick keys on the keyboard/space submenu.
     -- Skip others.
-    if optionParameter ~= "keyboard_space" then return end
+    if optionParameter ~= "keyboard_space" then 
+        DebugError("[Hotkey.Interface] displayControls: Not keyboard_space, skipping") -- Debug: Log non-keyboard_space skip
+        return 
+    end
 
     -- Look up the frame with the table.
     -- This should be in layer 3, matching config.optionsLayer.
     local frame = menu.optionsFrame
     if frame == nil then
+        DebugError("[Hotkey.Interface] displayControls: Failed to find optionsFrame") -- Debug: Log frame not found
         error("Failed to find gameoptions menu main frame")
     end
             
@@ -527,9 +590,11 @@ function L.displayControls (preselectOption, optionParameter)
     for i=1,#frame.content do
         if frame.content[i].type == "table" then
             ftable = frame.content[i]
+            DebugError("[Hotkey.Interface] displayControls: Found table in frame content at index: " .. tostring(i)) -- Debug: Log table found
         end
     end
     if ftable == nil then
+        DebugError("[Hotkey.Interface] displayControls: Failed to find ftable") -- Debug: Log table not found
         error("Failed to find gameoptions menu main ftable")
     end
 
@@ -538,9 +603,11 @@ function L.displayControls (preselectOption, optionParameter)
         DebugError("action_registry is nil")
         return
     end
+    DebugError("[Hotkey.Interface] displayControls: Action registry available, proceeding") -- Debug: Log action registry check
 
     -- Add some space.
     row = ftable:addRow(false, { bgColor = Color.row_background })
+    DebugError("[Hotkey.Interface] displayControls: Added spacer row") -- Debug: Log spacer row addition
     row[2]:setColSpan(3):createText(" ", { 
         fontsize = 1, 
         height = config.infoTextHeight, 
@@ -549,7 +616,7 @@ function L.displayControls (preselectOption, optionParameter)
     -- Add a nice title.
     -- Make this a larger than normal font.
     local row = ftable:addRow(false, { bgColor = Color.row_background })
-
+    DebugError("[Hotkey.Interface] displayControls: Added title row") -- Debug: Log title row addition
     row[2]:setColSpan(3):createText(T.extensions, config.subHeaderTextProperties_2)
     
     -- Make sure all actions have an entry in the player keys table.
@@ -569,6 +636,7 @@ function L.displayControls (preselectOption, optionParameter)
                     [2] = {combo  = "", code = nil, source = nil, signum = nil},
                 }
             }
+            DebugError("[Hotkey.Interface] displayControls: Initialized player_action_keys for action ID: " .. tostring(action.id)) -- Debug: Log player keys initialization
         end
     end
         
@@ -586,6 +654,7 @@ function L.displayControls (preselectOption, optionParameter)
         if not cat_action_dict[cat] then cat_action_dict[cat] = {} end
         -- Add it in.
         table.insert(cat_action_dict[cat], action)
+        DebugError("[Hotkey.Interface] displayControls: Added action ID " .. tostring(action.id) .. " to category: " .. tostring(cat)) -- Debug: Log action categorization
     end
 
     -- Convert the cat table to a list, to enable lua sorting.
@@ -595,22 +664,26 @@ function L.displayControls (preselectOption, optionParameter)
         -- Also sort the actions by name while here.
         -- This lambda function returns True if the left arg goes first.
         table.sort(sublist, function (a,b) return (a.name < b.name) end)
+        DebugError("[Hotkey.Interface] displayControls: Sorted actions for category: " .. tostring(cat)) -- Debug: Log action sorting
     end
     -- Sort the cat names.
     table.sort(cats_sorted)
+    DebugError("[Hotkey.Interface] displayControls: Sorted categories: " .. tostring(table.concat(cats_sorted, ","))) -- Debug: Log category sorting
 
     -- Loop over cat names.
     for _, cat in ipairs(cats_sorted) do
         -- Make a header if this is a named category.
         if cat ~= "" then
             local row = ftable:addRow(false, { bgColor = Color.row_background })
-            -- TODO: maybe colspan 7.
+            -- TODO: maybe colspan 7.            
+            DebugError("[Hotkey.Interface] displayControls: Added category header for: " .. tostring(cat)) -- Debug: Log category header
             row[2]:setColSpan(3):createText(cat, config.subHeaderTextProperties)
         end
         -- Loop over the sorted action list.
         for _, action in ipairs(cat_action_dict[cat]) do
             -- Hand off to custom function.
             L.displayControlRow(ftable, action.id)
+            DebugError("[Hotkey.Interface] displayControls: Added row for action ID: " .. tostring(action.id)) -- Debug: Log action row addition
         end
     end
 
@@ -621,10 +694,11 @@ function L.displayControls (preselectOption, optionParameter)
     for i = 1, #ftable.rows do
         if ftable.rows[i].index == preselectOption then
             ftable:setSelectedRow(ftable.rows[i].index)
+            DebugError("[Hotkey.Interface] displayControls: Set selected row to: " .. tostring(preselectOption)) -- Debug: Log row selection
             break
         end
     end
-            
+
     -- -Removed; display is handled above.
     --[[
     -- Need to re-display.
@@ -645,23 +719,23 @@ function L.displayControls (preselectOption, optionParameter)
     ]]
 end
 
-
 -- Copy/edit of ego's function for displaying a control row of text
 -- and two buttons.
--- Attempts to reuse ego's function were a mess.
 function L.displayControlRow(ftable, action_id)
-
-    local action    = L.action_registry[action_id]
+    DebugError("[Hotkey.Interface] displayControlRow: Adding row for action ID: " .. tostring(action_id)) -- Debug: Log row addition
+    local action = L.action_registry[action_id]
     local player_keys = L.player_action_keys[action_id]
     
     local row = ftable:addRow(true, { bgColor = Color.row_background })
+    DebugError("[Hotkey.Interface] displayControlRow: Created row for action ID: " .. tostring(action_id)) -- Debug: Log row creation
     
     -- Select the row if it was selected before menu reload.
     if row.index == menu.preselectOption then
         ftable:setSelectedRow(row.index)
-        -- Select a column, 3 or 4, those with buttons.
+        DebugError("[Hotkey.Interface] displayControlRow: Set selected row: " .. tostring(row.index)) -- Debug: Log row selection
         if menu.preselectCol == 3 or menu.preselectCol == 4 then
             ftable:setSelectedCol(menu.preselectCol)
+            DebugError("[Hotkey.Interface] displayControlRow: Set selected column: " .. tostring(menu.preselectCol)) -- Debug: Log column selection
         end
     end
 
@@ -670,65 +744,59 @@ function L.displayControlRow(ftable, action_id)
     row[2]:createText(action.name, config.standardTextProperties)
     if action.description then
         row[2].properties.mouseOverText = action.description
+        DebugError("[Hotkey.Interface] displayControlRow: Set action title: " .. tostring(action.name) .. ", description: " .. tostring(action.description)) -- Debug: Log title and description
+    else
+        DebugError("[Hotkey.Interface] displayControlRow: Set action title: " .. tostring(action.name) .. ", no description") -- Debug: Log title without description
     end
     
     -- Create the two buttons.
     for i = 1,2 do
         local info = player_keys.inputs[i]
+        DebugError("[Hotkey.Interface] displayControlRow: Processing input " .. tostring(i) .. " for action ID: " .. tostring(action_id)) -- Debug: Log input processing
 
         -- Get the name of an existing key, or blank.
         local keyname, keyicon = "", nil
         if info.source then
             keyname, keyicon = menu.getInputName(info.source, info.code, info.signum)
+            DebugError("[Hotkey.Interface] displayControlRow: Input " .. tostring(i) .. " keyname: " .. tostring(keyname) .. ", keyicon: " .. tostring(keyicon)) -- Debug: Log keyname and keyicon
         end
 
         -- Skip the funkiness regarding truncating the text string to
         -- make room for the icon. TODO: maybe revisit if needed.
-        
+
         -- Buttons start at column 3, so offset i.
         local col = i+2
         local button = row[col]:createButton({ mouseOverText = action.description or "" })
+        DebugError("[Hotkey.Interface] displayControlRow: Created button at column: " .. tostring(col)) -- Debug: Log button creation
         -- Set up the text label; this applies even without a keyname since
         -- it handles blinking _.
         button:setText(
             -- 'nameControl' handles label blinking when changing.
             function () return menu.nameControl(keyname, row.index, col) end,
-            -- Can probably leave color at default; don't need 'red' logic.
             { color = Color.text_normal })
+        DebugError("[Hotkey.Interface] displayControlRow: Set button text for column: " .. tostring(col)) -- Debug: Log button text
         -- Add the icon.
         if keyicon then
             button:setText2(keyicon, { halign = "right" })
+            DebugError("[Hotkey.Interface] displayControlRow: Set button icon for column: " .. tostring(col)) -- Debug: Log button icon
         end
 
         -- Clicks will hand off to buttonControl.
         row[col].handlers.onClick = function () return menu.buttonControl(
-            -- Second arg is a list with a specific ordering.
             row.index, {
-                -- controltype; go with whatever.
-                "functions", 
-                -- controlcode; go with the action id.
+                "functions",
                 action_id,
-                -- oldinputtype
                 info.source,
-                -- oldinputcode
                 info.code,
-                -- oldinputsgn
                 info.signum,
-                -- column
                 col,
-                -- not_mapable/nokeyboard
                 false,
-                -- control_context; put whatever.
                 "hotkey_api",
-                -- allowmouseaxis
                 false,
-            }) end
-        -- Unclear on if this is good for anything; probably not.
-        --row[col].properties.uiTriggerID = "remapcontrol1a"
-
+            }) end            
+        DebugError("[Hotkey.Interface] displayControlRow: Set onClick handler for column: " .. tostring(col)) -- Debug: Log click handler
     end    
 end
-
 
 --[[
 The following functions are after buttonControl(), the function
@@ -746,9 +814,10 @@ Fields are:
 -- Should only be called on player keys, not ego keys, so has no link
 -- back to the original remapInput.
 function L.remapInput(...)
-
+    DebugError("[Hotkey.Interface] remapInput: Called with args: " .. tostring(select("#", ...))) -- Debug: Log function call
     -- Always call this; ego does it right away.
     menu.unregisterDirectInput()
+    DebugError("[Hotkey.Interface] remapInput: Unregistered direct input") -- Debug: Log input unregistration
 
     -- Code to call on any return path, except those that still listen
     -- for keys.
@@ -761,8 +830,11 @@ function L.remapInput(...)
         menu.preselectTopRow = GetTopRow(menu.optionTable)
         menu.preselectOption = menu.remapControl.row
         menu.preselectCol = menu.remapControl.col
+        DebugError("[Hotkey.Interface] remapInput: Set preselect - topRow: " .. tostring(menu.preselectTopRow) .. ", option: " .. tostring(menu.preselectOption) .. ", col: " .. tostring(menu.preselectCol)) -- Debug: Log preselect settings
         menu.remapControl = nil
+        DebugError("[Hotkey.Interface] remapInput: Cleared remapControl") -- Debug: Log remapControl clear
         menu.submenuHandler(menu.currentOption)
+        DebugError("[Hotkey.Interface] remapInput: Called submenuHandler with option: " .. tostring(menu.currentOption)) -- Debug: Log submenuHandler call
     end
 
     -- Safety wrap the rest of this logic.
@@ -772,19 +844,19 @@ function L.remapInput(...)
         DebugError("remapInput error: "..tostring(error))
         return_func()
     end
+    DebugError("[Hotkey.Interface] remapInput: Wrapped call success: " .. tostring(success)) -- Debug: Log wrapped call result
 end
 
 -- Inner part of remapInput, allowed to error.
 function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputsgn)
-
-
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Processing input - type: " .. tostring(newinputtype) .. ", code: " .. tostring(newinputcode) .. ", signum: " .. tostring(newinputsgn)) -- Debug: Log input processing
     if debug.print_keycodes then
         Lib.Print_Table({
             controlcode = menu.remapControl.controlcode,
             newinputtype = newinputtype,
             newinputcode = newinputcode,
             newinputsgn = newinputsgn,
-            }, "Control remap info")
+        }, "Control remap info")
         --DebugError(string.format(
         --    "Detected remap of code '%s'; new aspects: type %s, %s, %s", 
         --    tostring(menu.remapControl.controlcode),
@@ -795,28 +867,28 @@ function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputs
         --Lib.Print_Table(menu.remapControl, "menu.remapControl")
     end
 
-
     -- Look up the matching action.
     local action_keys = L.player_action_keys[menu.remapControl.controlcode]
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Looked up action_keys for ID: " .. tostring(menu.remapControl.controlcode)) -- Debug: Log action keys lookup
     -- Error if not found.
     if not action_keys then
+        DebugError("[Hotkey.Interface] remapInput_wrapped: No action_keys for ID: " .. tostring(menu.remapControl.controlcode)) -- Debug: Log action keys not found
         error("Found no action_keys matching id: "..tostring(menu.remapControl.controlcode))
     end
-
             
     -- 'newinputtype' will be 1 for keyboard.
     -- Since only keyboard is wanted for now, restart listening if something
     -- else arrived.
     if newinputtype ~= 1 then
-        -- DebugError("Hotkey: Non-keyboard input not supported.")
+        DebugError("[Hotkey.Interface] remapInput_wrapped: Non-keyboard input not supported, restarting input listener") -- Debug: Log non-keyboard input
         menu.registerDirectInput()
         -- Normal return; keep listener going.
         return
     end
-
+    
     -- TODO: consider integrating other ego style functions for avoiding
     -- control conflicts and such.
-    
+
     -- Use col (3 or 4) to know which index to replace (1 or 2).
     -- Try to make this a little safe against patches adding columns.
     local input_index
@@ -825,20 +897,21 @@ function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputs
     else
         input_index = 2
     end
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Selected input index: " .. tostring(input_index) .. " for column: " .. tostring(menu.remapControl.col)) -- Debug: Log input index selection
     
     -- Note the prior key combo.
     local old_combo = action_keys.inputs[input_index].combo
     local new_combo
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Old combo: " .. tostring(old_combo)) -- Debug: Log old combo
 
     -- Note: ego menu behavior has "escape" cancel the selection with no change,
     -- and "delete" remove the key binding.
     -- Try to mimic that here.
-
     -- Check for escape.
     if newinputtype == 1 and newinputcode == 1 then
+        DebugError("[Hotkey.Interface] remapInput_wrapped: Escape key detected, cancelling") -- Debug: Log escape key
         -- Do nothing.
         return return_func()
-
     -- Check for "delete" on a key that was mapped.
     -- (oldinputcode == -1 means it wasn't mapped.)
     elseif newinputtype == 1 and newinputcode == 211 then
@@ -850,11 +923,13 @@ function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputs
         if debug.print_keynames then
             DebugError("Deleting key combo: "..old_combo)
         end
+        DebugError("[Hotkey.Interface] remapInput_wrapped: Delete key detected, resetting input") -- Debug: Log delete key
     else
         -- Get the new combo string.
         new_combo = string.format("code %d %d %d", newinputtype, newinputcode, newinputsgn)
+        DebugError("[Hotkey.Interface] remapInput_wrapped: New combo: " .. tostring(new_combo)) -- Debug: Log new combo
 
-        -- -Removed, updated 3.0 makes ego's version too hard to use since
+            -- -Removed, updated 3.0 makes ego's version too hard to use since
         --  it uses some special escape character and icon code for modifiers.
         ---- Start with ego's key name.
         ---- TODO: probably not robust across languages.
@@ -869,13 +944,13 @@ function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputs
         --end
     end
     
-
     -- If the new_combo is already recorded as either of the existing inputs,
     -- and is not empty (eg. deleting binding), do nothing.
     if new_combo ~= "" and (action_keys.inputs[1].combo == new_combo or action_keys.inputs[2].combo == new_combo) then
         if debug.print_keynames then
             DebugError("Ignoring already recorded key combo: "..new_combo)
         end
+        DebugError("[Hotkey.Interface] remapInput_wrapped: Ignoring duplicate combo: " .. tostring(new_combo)) -- Debug: Log duplicate combo
         return return_func()
     end
 
@@ -885,21 +960,23 @@ function L.remapInput_wrapped(return_func, newinputtype, newinputcode, newinputs
         code   = newinputcode, 
         source = newinputtype, 
         signum = newinputsgn }
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Updated input " .. tostring(input_index) .. " for action ID: " .. tostring(menu.remapControl.controlcode)) -- Debug: Log input update
         
     -- Signal lua to update if the combo changed.
     Raise_Signal("Update_Key", {
         id      = action_keys.id,
         new_key = new_combo,
         old_key = old_combo,
-        })
+    })
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Signalled Update_Key for action ID: " .. tostring(action_keys.id)) -- Debug: Log Update_Key signal
 
     -- Update the md to save the keys.
     -- TODO: maybe integrate into Update_Key calls.
     L.Write_Player_Keys()
+    DebugError("[Hotkey.Interface] remapInput_wrapped: Called Write_Player_Keys") -- Debug: Log Write_Player_Keys call
 
     return return_func()
 end
-
 
 ---- Patch registration.
 ---- Unused currently.
@@ -1106,5 +1183,4 @@ Possibly adding new keys:
 ]]
 
 return nil,Init
-
 end)

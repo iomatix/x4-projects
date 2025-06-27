@@ -26,7 +26,9 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     ------------------------------------------------------------------------------
     -- Required dependencies
     ------------------------------------------------------------------------------
-    local ffi = require("ffi")
+    do
+        local ffi = require("ffi")
+    end
     local socket = nil
     -- try-catch style workaround
     pcall(function() socket = require("socket") end)
@@ -124,7 +126,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
             local rpath = M.prefix .. name .. "_out"
             p.write_file = winpipe.open_pipe(wpath, "w")
             p.read_file = winpipe.open_pipe(rpath, "r")
-
+            
             if p.write_file and p.read_file then
                 DebugError("Connected pipe: " .. name)
                 return true

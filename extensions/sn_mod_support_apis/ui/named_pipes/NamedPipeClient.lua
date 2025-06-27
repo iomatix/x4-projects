@@ -8,7 +8,7 @@
 -------------------------------------------------------------------------------
 local M = {}
 
-isDebug = false -- Set to true for debug messages, false for production
+local isDebug = true -- Set to true for debug messages, false for production
 
 local Lib = require("extensions.sn_mod_support_apis.ui.named_pipes.Library")
 local Pipes = require("extensions.sn_mod_support_apis.ui.named_pipes.Pipes")

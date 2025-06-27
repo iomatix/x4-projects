@@ -76,7 +76,7 @@ writing and reading functions are shown here.
     - Optional, lua function to call, taking one argument.
 ]]
 
-    isDebug = false -- Set to true for debug messages, false for production
+    local isDebug = true -- Set to true for debug messages, false for production
 
     -- Set up any used ffi functions.
     local ffi = require("ffi")

@@ -1,6 +1,6 @@
 Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Library", function(require)
     
-    isDebug = false -- Set to true for debug messages, false for production
+    local isDebug = true -- Set to true for debug messages, false for production
 
     -- Table holding lib functions to be returned, or lib params that can
     -- be modified.

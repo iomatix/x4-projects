@@ -23,7 +23,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
       - Cleans up resources via a __gc proxy on each pipe state table.
     ]]
 
-    isDebug = false -- Set to true for debug messages, false for production
+    local isDebug = true -- Set to true for debug messages, false for production
     
     ------------------------------------------------------------------------------
     -- Required dependencies

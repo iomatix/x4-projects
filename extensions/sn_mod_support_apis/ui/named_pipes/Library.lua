@@ -26,7 +26,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Library", funct
         if return_value == nil then
             return_value = "nil"
         end
-        DebugError("UI Event: Named_Pipes, " .. name .. " ; value: " .. return_value)
+        DebugError("[named_pipes.Library] Event: Named_Pipes, " .. name .. " ; value: " .. return_value)
     end
 
     ---- Split a string on the first semicolon.

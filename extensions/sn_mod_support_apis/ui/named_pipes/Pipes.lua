@@ -26,9 +26,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
     ------------------------------------------------------------------------------
     -- Required dependencies
     ------------------------------------------------------------------------------
-    do
-        local ffi = require("ffi")
-    end
+    local ffi = require("ffi")
     local socket = nil
     -- try-catch style workaround
     pcall(function() socket = require("socket") end)

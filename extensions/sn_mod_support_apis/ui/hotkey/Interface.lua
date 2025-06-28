@@ -1,5 +1,5 @@
 Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function(require)
---[[
+    --[[
 Lua interface for registering and handling custom hotkeys in X4 Foundations version 7.6.
 Integrates hotkeys into the game's options menu and supports keyboard, mouse, gamepad, and joystick inputs.
 
@@ -24,13 +24,15 @@ Usage:
     local C = ffi.C
     ffi.cdef [[
     const char* GetLocalizedInputName(uint32_t sourceid, uint32_t codeid);
-    ]]
+]]
 
     -- Local state and function table
     local L = {
         hotkeys = {}, -- { name = { signal = string, desc = string, source = int, code = int } }
         originalDisplayControls = nil,
-        isDebug = false -- Set to true for debugging
+        isDebug = false, -- Set to true for debugging
+        initAttempts = 0,
+        maxInitAttempts = 10
     }
 
     -- Log debug messages if enabled
@@ -65,8 +67,17 @@ Usage:
     function L.Init()
         local menu = Menus and Menus.gameoptions
         if not menu then
-            DebugLog("Options menu not found during initialization")
-            return
+            L.initAttempts = L.initAttempts + 1
+            if L.initAttempts <= L.maxInitAttempts then
+                DebugLog("Options menu not found, retrying (" .. L.initAttempts .. "/" .. L.maxInitAttempts .. ")")
+                AddUITriggeredEvent("Hotkey_API", "retry_init", {
+                    delay = 1
+                })
+                return
+            else
+                DebugLog("Failed to find options menu after " .. L.maxInitAttempts .. " attempts")
+                return
+            end
         end
 
         -- Store and override displayControls
@@ -74,7 +85,7 @@ Usage:
         menu.displayControls = L.displayControls
 
         -- Register input hooks for all devices
-        for _, hook in ipairs(config.input.directInputHookDefinitions) do
+        for _, hook in ipairs(config.input and config.input.directInputHookDefinitions or {}) do
             RegisterEvent(hook[1], function(_, keycode)
                 L.onInput(hook[2], keycode, hook[3])
             end)
@@ -104,7 +115,10 @@ Usage:
         local categoryRow = menu.optionsTable:addRow(true, {
             fixed = true
         })
-        categoryRow[2]:setColSpan(3):createText("Mod Hotkeys", config.subHeaderTextProperties)
+        categoryRow[2]:setColSpan(3):createText("Mod Hotkeys", config.subHeaderTextProperties or {
+            fontsize = 14,
+            font = "bold"
+        })
 
         -- Add hotkey rows
         for name, hotkey in pairs(L.hotkeys) do
@@ -112,8 +126,13 @@ Usage:
                 name = name,
                 hotkey = hotkey
             }, {})
-            row[2]:createText(hotkey.desc, config.standardTextProperties)
-            row[3]:createText(L.GetInputName(hotkey.source, hotkey.code), config.standardRightTextProperties)
+            row[2]:createText(hotkey.desc, config.standardTextProperties or {
+                fontsize = 12
+            })
+            row[3]:createText(L.GetInputName(hotkey.source, hotkey.code), config.standardRightTextProperties or {
+                fontsize = 12,
+                halign = "right"
+            })
             row[3].handlers.onClick = function()
                 L.onBindHotkey(name)
             end
@@ -157,10 +176,16 @@ Usage:
             return
         end
 
-        -- Prompt user to press a key/button (simplified for this example)
         DebugLog("Binding hotkey: " .. name .. ". Press a key/button...")
         -- Actual implementation would use DirectInput hooks and a confirmation dialog
     end
+
+    -- Handle retry initialization signal
+    RegisterEvent("Hotkey_API", function(_, event, args)
+        if event == "retry_init" then
+            L.Init()
+        end
+    end)
 
     -- Initialize the hotkey system
     L.Init()

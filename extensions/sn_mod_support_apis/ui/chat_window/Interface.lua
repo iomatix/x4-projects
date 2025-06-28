@@ -20,14 +20,14 @@ Usage:
 - Debug logs (controlled by `isDebug`) aid troubleshooting.
 ]]
 
-    -- FFI setup for native function calls.
+    -- FFI setup for native function calls
     local ffi = require("ffi")
     local C = ffi.C
     ffi.cdef [[
     void SetEditBoxText(const int editboxid, const char* text);
 ]]
 
-    -- Local state and function table.
+    -- Local state and function table
     local L = {
         ego_onChatWindowCreated = nil,
         edit_box = nil,
@@ -36,12 +36,12 @@ Usage:
             rai = "refreshai",
             rmd = "refreshmd"
         },
-        isDebug = true -- Set to false in production.
+        isDebug = false -- Set to true for debugging
     }
 
-    -- Configuration with custom text colors.
+    -- Configuration with custom text colors
     local config = {
-        textColor = {
+        textColors = {
             command = "#FFFFFFFF", -- White
             directMessage = "#FFFF2B2B", -- Bright red
             otherMessage = "#FFF2F200", -- Yellow
@@ -50,23 +50,21 @@ Usage:
         }
     }
 
-    -- Helper function to log debug messages.
+    -- Log debug messages if enabled
     local function DebugLog(message)
         if L.isDebug then
             DebugError("[Chat_Window_API] " .. message)
         end
     end
 
- 
-    -- Raises a signal to MD with the specified name and arguments.
-    -- @param name (string) - Signal name (e.g., "text_entered").
-    -- @param args (table|nil) - Arguments to pass.
+    -- Raise a signal to MD with the specified name and arguments
+    -- @param name (string) Signal name (e.g., "text_entered")
+    -- @param args (table|nil) Arguments to pass
     function L.Raise_Signal(name, args)
         AddUITriggeredEvent("Chat_Window_API", name, args)
     end
 
-
-    -- Initializes the chat window interface by patching the menu.
+    -- Initialize the chat window interface by patching the menu
     function L.Init()
         RegisterEvent("Chat_Window_API.Print", L.onPrint)
 
@@ -79,13 +77,13 @@ Usage:
         end
 
         L.Patch_New_Menu()
-        DebugLog("Chat window interface initialized.")
+        DebugLog("Chat window interface initialized")
     end
 
-    -- Patches the chat window menu if it exists.
+    -- Patch the chat window menu if it exists
     function L.Patch_New_Menu()
         local chat_menu = nil
-        for _, menu in ipairs(View.menus) do
+        for _, menu in ipairs(View.menus or {}) do
             if menu.id == "chatWindow" then
                 chat_menu = menu
                 break
@@ -93,26 +91,28 @@ Usage:
         end
 
         if not chat_menu then
-            DebugLog("Chat window not found during patching.")
+            DebugLog("Chat window not found during patching")
             return
         end
 
         L.ego_onChatWindowCreated = chat_menu.callback
         chat_menu.callback = L.onChatWindowCreated
-        if View.hasMenu({
+        if View.hasMenu and View.hasMenu({
             chatWindow = true
         }) then
             View.updateMenu(chat_menu)
         end
     end
 
-    -- Callback when the chat window is created or updated.
-    -- Sets up the editbox for input interception.
-    -- @param frames (table) - Array of frame IDs.
+    -- Callback when the chat window is created or updated
+    -- Sets up the editbox for input interception
+    -- @param frames (table) Array of frame IDs
     function L.onChatWindowCreated(frames)
-        L.ego_onChatWindowCreated(frames)
+        if L.ego_onChatWindowCreated then
+            L.ego_onChatWindowCreated(frames)
+        end
 
-        for _, child in ipairs(GetChildren(frames[1])) do
+        for _, child in ipairs(GetChildren(frames[1]) or {}) do
             if GetWidgetType(child) == "table" then
                 local cell = GetCellContent(child, 1, 1)
                 if cell and GetWidgetType(cell) == "editbox" then
@@ -124,17 +124,17 @@ Usage:
 
         if L.edit_box then
             SetScript(L.edit_box, "onEditBoxDeactivated", L.onCommandBarDeactivated)
-            DebugLog("Editbox found and script set.")
+            DebugLog("Editbox found and script set")
         else
-            DebugLog("Editbox not found.")
+            DebugLog("Editbox not found")
         end
     end
 
-    -- Handles editbox deactivation (e.g., Enter press) to process input.
-    -- @param _ (any) - Unused.
-    -- @param text (string) - Entered text.
-    -- @param _ (any) - Unused.
-    -- @param wasConfirmed (boolean) - True if confirmed (e.g., Enter).
+    -- Handle editbox deactivation (e.g., Enter press) to process input
+    -- @param _ (any) Unused
+    -- @param text (string) Entered text
+    -- @param _ (any) Unused
+    -- @param wasConfirmed (boolean) True if confirmed (e.g., Enter)
     function L.onCommandBarDeactivated(_, text, _, wasConfirmed)
         if not wasConfirmed then
             return
@@ -142,8 +142,8 @@ Usage:
         L.Process_Text(text)
     end
 
-    -- Processes entered text, handling commands starting with '/'.
-    -- @param text (string) - Raw input text.
+    -- Process entered text, handling commands starting with '/'
+    -- @param text (string) Raw input text
     function L.Process_Text(text)
         if text == "" then
             return
@@ -154,11 +154,12 @@ Usage:
             table.insert(terms, term)
         end
         if #terms == 0 or string.sub(terms[1], 1, 1) ~= "/" then
+            L.Add_Line(text, config.textColors.otherMessage)
             return
         end
 
         DebugLog("Processing command: " .. text)
-        L.Add_Line(text)
+        L.Add_Line(text, config.textColors.command)
 
         local command = string.sub(terms[1], 2)
         local param = table.concat(terms, " ", 2)
@@ -166,6 +167,9 @@ Usage:
         if L.short_commands[command] then
             command = L.short_commands[command]
             ExecuteDebugCommand(command, param)
+            L.Add_Line("Executed command: " .. command, config.textColors.serverMessage)
+        else
+            L.Add_Line("Unknown command: " .. command, config.textColors.serverMessage)
         end
 
         L.Raise_Signal("text_entered", {
@@ -174,29 +178,31 @@ Usage:
         })
     end
 
-    -- Adds a line to the chat window using the announcement system.
-    -- @param line (string) - Text to display.
-    function L.Add_Line(line)
+    -- Add a line to the chat window using the announcement system
+    -- @param line (string) Text to display
+    -- @param color (string) Hex color code for the text
+    function L.Add_Line(line, color)
         table.insert(__CORE_CHAT_WINDOW.announcements, {
             text = line,
-            prefix = config.textColor.serverMessage .. "Mod: ",
+            prefix = (color or config.textColors.serverMessage) .. "Mod: ",
             timestamp = tostring(os.time() * 1000),
             announcement = true
         })
-        menu.messagesOutdated = true
-        menu.onShowMenu()
+        if menu then
+            menu.messagesOutdated = true
+            menu.onShowMenu()
+        end
         DebugLog("Added line: " .. line)
     end
 
-
-    -- Handles print events from MD to display text in the chat.
-    -- @param _ (any) - Unused event ID.
-    -- @param text (string) - Text to display.
+    -- Handle print events from MD to display text in the chat
+    -- @param _ (any) Unused event ID
+    -- @param text (string) Text to display
     function L.onPrint(_, text)
-        L.Add_Line(text)
+        L.Add_Line(text, config.textColors.serverMessage)
     end
 
-    -- Initialize the chat system.
+    -- Initialize the chat system
     L.Init()
 
     return nil, L.Init

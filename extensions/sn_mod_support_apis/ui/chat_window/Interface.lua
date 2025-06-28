@@ -129,69 +129,70 @@ Usage:
             DebugLog("Editbox not found")
         end
     end
-end
 
+    -- Add a line to the text table.
+    -- Line will be formatted, and may be broken into multiple lines by word wrap.
+    -- Oldest lines will be removed, past the textbox line limit.
+    function L.Add_Line(line)
 
--- Add a line to the text table.
--- Line will be formatted, and may be broken into multiple lines by word wrap.
--- Oldest lines will be removed, past the textbox line limit.
-function L.Add_Line(line)
+        -- Format the line; expect to maybe get newlines back.
+        -- TODO: think about this. Also consider if original text has newlines.
+        local f_line = line
 
-    -- Format the line; expect to maybe get newlines back.
-    -- TODO: think about this. Also consider if original text has newlines.
-    local f_line = line
-
-    -- Split and add to existing text lines.
-    local sublines = Lib.Split_String_Multi(f_line, "\n")
-    for i, subline in ipairs(sublines) do
-        table.insert(L.text_lines, subline)
-    end
-
-    -- Remove older entries.
-    if #L.text_lines > config.maxOutputLines then
-        local new_text_lines = {}
-        for i = #L.text_lines - config.maxOutputLines + 1, #L.text_lines do
-            table.insert(new_text_lines, L.text_lines[i])
+        -- Split and add to existing text lines.
+        local sublines = Lib.Split_String_Multi(f_line, "\n")
+        for i, subline in ipairs(sublines) do
+            table.insert(L.text_lines, subline)
         end
-        L.text_lines = new_text_lines
+
+        -- Remove older entries.
+        if #L.text_lines > config.maxOutputLines then
+            local new_text_lines = {}
+            for i = #L.text_lines - config.maxOutputLines + 1, #L.text_lines do
+                table.insert(new_text_lines, L.text_lines[i])
+            end
+            L.text_lines = new_text_lines
+        end
+
+        -- Update the text window.
+        L.rebuildWindowOutput()
     end
 
-    -- Update the text window.
-    L.rebuildWindowOutput()
-end
-
--- Print a line sent from md.
-function L.onPrint(_, text)
-    -- Ignore if not controlling the text.
-    if not L.control_text then return end
-    L.Add_Line(text)
-end
-
-
--- On each update, do a fresh rebuild of the window text.
--- This works somewhat differently than the ego code, aiming to fix an ego
--- problem when text wordwraps (in ego code causes it to print outside/below
--- the text window).
-function L.rebuildWindowOutput()
-
-    -- Skip if the table isn't set up yet.
-    if L.text_table == nil then return end
-
-    -- Merge the lines into one string.
-    local text = ""
-    for i, line in ipairs(L.text_lines) do
-        text = text .. "\n" .. line
+    -- Print a line sent from md.
+    function L.onPrint(_, text)
+        -- Ignore if not controlling the text.
+        if not L.control_text then
+            return
+        end
+        L.Add_Line(text)
     end
 
-    -- Jump a couple hoops to update the table cell. Copy/edit of ego code.
-    local contentDescriptor = CreateFontString(text, "left", 255, 255, 255, 100, "Zekton", 10, true, 0, 0, 160)
-    local success = SetCellContent(L.text_table, contentDescriptor, 1, 1)
-    if not success then
-        DebugError("ChatWindow error - failed to update output.")
-    end
-    ReleaseDescriptor(contentDescriptor)
-end
+    -- On each update, do a fresh rebuild of the window text.
+    -- This works somewhat differently than the ego code, aiming to fix an ego
+    -- problem when text wordwraps (in ego code causes it to print outside/below
+    -- the text window).
+    function L.rebuildWindowOutput()
 
--- Removed. TODO: overhaul for changes made in 6.0+.
-return nil,L.Init
+        -- Skip if the table isn't set up yet.
+        if L.text_table == nil then
+            return
+        end
+
+        -- Merge the lines into one string.
+        local text = ""
+        for i, line in ipairs(L.text_lines) do
+            text = text .. "\n" .. line
+        end
+
+        -- Jump a couple hoops to update the table cell. Copy/edit of ego code.
+        local contentDescriptor = CreateFontString(text, "left", 255, 255, 255, 100, "Zekton", 10, true, 0, 0, 160)
+        local success = SetCellContent(L.text_table, contentDescriptor, 1, 1)
+        if not success then
+            DebugError("ChatWindow error - failed to update output.")
+        end
+        ReleaseDescriptor(contentDescriptor)
+    end
+
+    -- Removed. TODO: overhaul for changes made in 6.0+.
+    return nil, L.Init
 end)

@@ -1,5 +1,5 @@
 Lua_Loader.define("extensions.sn_mod_support_apis.ui.chat_window.Interface", function(require)
---[[
+    --[[
 Lua interface between Mod Director (MD) and the X4 chat window for version 7.6.
 Intercepts chat text, parses commands starting with '/', and displays responses in the chat window.
 
@@ -57,18 +57,16 @@ Usage:
         end
     end
 
-    --[[
-Raises a signal to MD with the specified name and arguments.
-@param name (string) - Signal name (e.g., "text_entered").
-@param args (table|nil) - Arguments to pass.
-]]
+ 
+    -- Raises a signal to MD with the specified name and arguments.
+    -- @param name (string) - Signal name (e.g., "text_entered").
+    -- @param args (table|nil) - Arguments to pass.
     function L.Raise_Signal(name, args)
         AddUITriggeredEvent("Chat_Window_API", name, args)
     end
 
-    --[[
-Initializes the chat window interface by patching the menu.
-]]
+
+    -- Initializes the chat window interface by patching the menu.
     function L.Init()
         RegisterEvent("Chat_Window_API.Print", L.onPrint)
 
@@ -84,9 +82,7 @@ Initializes the chat window interface by patching the menu.
         DebugLog("Chat window interface initialized.")
     end
 
-    --[[
-Patches the chat window menu if it exists.
-]]
+    -- Patches the chat window menu if it exists.
     function L.Patch_New_Menu()
         local chat_menu = nil
         for _, menu in ipairs(View.menus) do
@@ -110,11 +106,9 @@ Patches the chat window menu if it exists.
         end
     end
 
-    --[[
-Callback when the chat window is created or updated.
-Sets up the editbox for input interception.
-@param frames (table) - Array of frame IDs.
-]]
+    -- Callback when the chat window is created or updated.
+    -- Sets up the editbox for input interception.
+    -- @param frames (table) - Array of frame IDs.
     function L.onChatWindowCreated(frames)
         L.ego_onChatWindowCreated(frames)
 
@@ -136,13 +130,11 @@ Sets up the editbox for input interception.
         end
     end
 
-    --[[
-Handles editbox deactivation (e.g., Enter press) to process input.
-@param _ (any) - Unused.
-@param text (string) - Entered text.
-@param _ (any) - Unused.
-@param wasConfirmed (boolean) - True if confirmed (e.g., Enter).
-]]
+    -- Handles editbox deactivation (e.g., Enter press) to process input.
+    -- @param _ (any) - Unused.
+    -- @param text (string) - Entered text.
+    -- @param _ (any) - Unused.
+    -- @param wasConfirmed (boolean) - True if confirmed (e.g., Enter).
     function L.onCommandBarDeactivated(_, text, _, wasConfirmed)
         if not wasConfirmed then
             return
@@ -150,10 +142,8 @@ Handles editbox deactivation (e.g., Enter press) to process input.
         L.Process_Text(text)
     end
 
-    --[[
-Processes entered text, handling commands starting with '/'.
-@param text (string) - Raw input text.
-]]
+    -- Processes entered text, handling commands starting with '/'.
+    -- @param text (string) - Raw input text.
     function L.Process_Text(text)
         if text == "" then
             return
@@ -184,10 +174,8 @@ Processes entered text, handling commands starting with '/'.
         })
     end
 
-    --[[
-Adds a line to the chat window using the announcement system.
-@param line (string) - Text to display.
-]]
+    -- Adds a line to the chat window using the announcement system.
+    -- @param line (string) - Text to display.
     function L.Add_Line(line)
         table.insert(__CORE_CHAT_WINDOW.announcements, {
             text = line,
@@ -200,11 +188,10 @@ Adds a line to the chat window using the announcement system.
         DebugLog("Added line: " .. line)
     end
 
-    --[[
-Handles print events from MD to display text in the chat.
-@param _ (any) - Unused event ID.
-@param text (string) - Text to display.
-]]
+
+    -- Handles print events from MD to display text in the chat.
+    -- @param _ (any) - Unused event ID.
+    -- @param text (string) - Text to display.
     function L.onPrint(_, text)
         L.Add_Line(text)
     end

@@ -30,7 +30,7 @@ Usage:
     local L = {
         hotkeys = {}, -- { name = { signal = string, desc = string, source = int, code = int } }
         originalDisplayControls = nil,
-        isDebug = false, -- Set to true for debugging
+        isDebug = true,-- Set to true for debugging
         initAttempts = 0,
         maxInitAttempts = 10
     }

@@ -36,7 +36,7 @@ Usage:
             rai = "refreshai",
             rmd = "refreshmd"
         },
-        isDebug = false -- Set to true for debugging
+        isDebug = true -- Set to true for debugging
     }
 
     -- Configuration with custom text colors

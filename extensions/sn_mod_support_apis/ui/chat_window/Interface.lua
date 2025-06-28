@@ -43,6 +43,9 @@ Usage:
     local config = {
         textColor = {
             command = "#FFFFFFFF", -- White
+            directMessage = "#FFFF2B2B", -- Bright red
+            otherMessage = "#FFF2F200", -- Yellow
+            ownMessage = "#FF1B893C", -- Dark green
             serverMessage = "#FFAE02AE" -- Bright purple
         }
     }

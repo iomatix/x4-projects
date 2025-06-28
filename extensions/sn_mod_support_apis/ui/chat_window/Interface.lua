@@ -291,5 +291,5 @@ function L.rebuildWindowOutput()
 end
 
 -- Removed. TODO: overhaul for changes made in 6.0+.
-return nil--,L.Init
+return nil,L.Init
 end)

@@ -129,81 +129,69 @@ Usage:
             DebugLog("Editbox not found")
         end
     end
+end
 
-    -- Handle editbox deactivation (e.g., Enter press) to process input
-    -- @param _ (any) Unused
-    -- @param text (string) Entered text
-    -- @param _ (any) Unused
-    -- @param wasConfirmed (boolean) True if confirmed (e.g., Enter)
-    function L.onCommandBarDeactivated(_, text, _, wasConfirmed)
-        if not wasConfirmed then
-            return
-        end
-        L.Process_Text(text)
+
+-- Add a line to the text table.
+-- Line will be formatted, and may be broken into multiple lines by word wrap.
+-- Oldest lines will be removed, past the textbox line limit.
+function L.Add_Line(line)
+
+    -- Format the line; expect to maybe get newlines back.
+    -- TODO: think about this. Also consider if original text has newlines.
+    local f_line = line
+
+    -- Split and add to existing text lines.
+    local sublines = Lib.Split_String_Multi(f_line, "\n")
+    for i, subline in ipairs(sublines) do
+        table.insert(L.text_lines, subline)
     end
 
-    -- Process entered text, handling commands starting with '/'
-    -- @param text (string) Raw input text
-    function L.Process_Text(text)
-        if text == "" then
-            return
+    -- Remove older entries.
+    if #L.text_lines > config.maxOutputLines then
+        local new_text_lines = {}
+        for i = #L.text_lines - config.maxOutputLines + 1, #L.text_lines do
+            table.insert(new_text_lines, L.text_lines[i])
         end
-
-        local terms = {}
-        for term in text:gmatch("%S+") do
-            table.insert(terms, term)
-        end
-        if #terms == 0 or string.sub(terms[1], 1, 1) ~= "/" then
-            L.Add_Line(text, config.textColors.otherMessage)
-            return
-        end
-
-        DebugLog("Processing command: " .. text)
-        L.Add_Line(text, config.textColors.command)
-
-        local command = string.sub(terms[1], 2)
-        local param = table.concat(terms, " ", 2)
-
-        if L.short_commands[command] then
-            command = L.short_commands[command]
-            ExecuteDebugCommand(command, param)
-            L.Add_Line("Executed command: " .. command, config.textColors.serverMessage)
-        else
-            L.Add_Line("Unknown command: " .. command, config.textColors.serverMessage)
-        end
-
-        L.Raise_Signal("text_entered", {
-            terms = terms,
-            text = text
-        })
+        L.text_lines = new_text_lines
     end
 
-    -- Add a line to the chat window using the announcement system
-    -- @param line (string) Text to display
-    -- @param color (string) Hex color code for the text
-    function L.Add_Line(line, color)
-        table.insert(__CORE_CHAT_WINDOW.announcements, {
-            text = line,
-            prefix = (color or config.textColors.serverMessage) .. "Mod: ",
-            timestamp = tostring(os.time() * 1000),
-            announcement = true
-        })
-        if menu then
-            menu.messagesOutdated = true
-            menu.onShowMenu()
-        end
-        DebugLog("Added line: " .. line)
+    -- Update the text window.
+    L.rebuildWindowOutput()
+end
+
+-- Print a line sent from md.
+function L.onPrint(_, text)
+    -- Ignore if not controlling the text.
+    if not L.control_text then return end
+    L.Add_Line(text)
+end
+
+
+-- On each update, do a fresh rebuild of the window text.
+-- This works somewhat differently than the ego code, aiming to fix an ego
+-- problem when text wordwraps (in ego code causes it to print outside/below
+-- the text window).
+function L.rebuildWindowOutput()
+
+    -- Skip if the table isn't set up yet.
+    if L.text_table == nil then return end
+
+    -- Merge the lines into one string.
+    local text = ""
+    for i, line in ipairs(L.text_lines) do
+        text = text .. "\n" .. line
     end
 
-    -- Handle print events from MD to display text in the chat
-    -- @param _ (any) Unused event ID
-    -- @param text (string) Text to display
-    function L.onPrint(_, text)
-        L.Add_Line(text, config.textColors.serverMessage)
+    -- Jump a couple hoops to update the table cell. Copy/edit of ego code.
+    local contentDescriptor = CreateFontString(text, "left", 255, 255, 255, 100, "Zekton", 10, true, 0, 0, 160)
+    local success = SetCellContent(L.text_table, contentDescriptor, 1, 1)
+    if not success then
+        DebugError("ChatWindow error - failed to update output.")
     end
+    ReleaseDescriptor(contentDescriptor)
+end
 
-    -- Initialize the chat system
-    L.Init()
-
-    return nil, L.Init
+-- Removed. TODO: overhaul for changes made in 6.0+.
+return nil,L.Init
 end)

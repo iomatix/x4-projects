@@ -57,19 +57,17 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.chat_window.Interface", fun
         },
     }
 
-    --[[
-    Raises a signal to MD with the specified name and arguments.
-    @param name (string) - The signal name (e.g., "text_entered").
-    @param args (table|nil) - Arguments to pass with the signal.
-    ]]
+    
+    -- Raises a signal to MD with the specified name and arguments.
+    -- @param name (string) - The signal name (e.g., "text_entered").
+    -- @param args (table|nil) - Arguments to pass with the signal.
     function L.Raise_Signal(name, args)
         AddUITriggeredEvent("Chat_Window_API", name, args)
     end
 
-    --[[
-    Initializes the chat window interface by registering events and patching the menu.
-    Runs at mod load to ensure existing or future chat windows are intercepted.
-    ]]
+
+    -- Initializes the chat window interface by registering events and patching the menu.
+    -- Runs at mod load to ensure existing or future chat windows are intercepted.
     function L.Init()
         -- Register MD print event and compatibility event.
         RegisterEvent("Chat_Window_API.Print", L.onPrint)
@@ -145,23 +143,19 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.chat_window.Interface", fun
         end
     end
 
-    --[[
-    Handles editbox deactivation (e.g., Enter key press) to process user input.
-    @param _ (any) - Unused parameter.
-    @param text (string) - Text entered in the editbox.
-    @param _ (any) - Unused parameter.
-    @param wasConfirmed (boolean) - True if deactivation was via confirmation (e.g., Enter).
-    ]]
+    -- Handles editbox deactivation (e.g., Enter key press) to process user input.
+    -- @param _ (any) - Unused parameter.
+    -- @param text (string) - Text entered in the editbox.
+    -- @param _ (any) - Unused parameter.
+    -- @param wasConfirmed (boolean) - True if deactivation was via confirmation (e.g., Enter).
     function L.onCommandBarDeactivated(_, text, _, wasConfirmed)
         if not wasConfirmed then return end
         L.Process_Text(text)
     end
 
-    --[[
-    Processes the entered text, handling commands and signaling MD.
-    Regular chat messages are left to the game; commands are intercepted.
-    @param text (string) - Raw text input from the editbox.
-    ]]
+    -- Processes the entered text, handling commands and signaling MD.
+    -- Regular chat messages are left to the game; commands are intercepted.
+    -- @param text (string) - Raw text input from the editbox.
     function L.Process_Text(text)
         if text == "" then return end
 
@@ -187,11 +181,9 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.chat_window.Interface", fun
         end
     end
 
-    --[[
-    Adds a line to the chat window as a local announcement.
-    Uses the game's announcement system for native integration.
-    @param line (string) - Text to display in the chat window.
-    ]]
+    -- Adds a line to the chat window as a local announcement.
+    -- Uses the game's announcement system for native integration.
+    -- @param line (string) - Text to display in the chat window.
     function L.Add_Line(line)
         table.insert(__CORE_CHAT_WINDOW.announcements, {
             text = line,
@@ -205,11 +197,9 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.chat_window.Interface", fun
         DebugError("[Chat_Window_API] Added line to announcements: " .. line)
     end
 
-    --[[
-    Handles print events from MD, displaying the text in the chat window.
-    @param _ (any) - Unused event ID.
-    @param text (string) - Text to print.
-    ]]
+    -- Handles print events from MD, displaying the text in the chat window.
+    -- @param _ (any) - Unused event ID.
+    -- @param text (string) - Text to print.
     function L.onPrint(_, text)
         L.Add_Line(text)
     end

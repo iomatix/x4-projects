@@ -64,7 +64,7 @@ Lua_Loader = {}
 
 local modules = {}
 
-local isDebug = true -- Set to false in production to disable debug messages
+local isDebug = false -- Set to false in production to disable debug messages
 
 local function Send_Priority_Ready()
     --DebugError("LUA Loader API: Signalling 'Lua_Loader, Priority_Ready'")

@@ -1,7 +1,36 @@
 Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function(require)
-    
+    --[[
+    Lua interface between Mod Director (MD) and the X4 Foundations Options Menu for custom hotkey management.
+    Primary goal is to register, bind, and display custom hotkeys for actions defined by MD scripts,
+    supporting keyboard, gamepad, and joystick inputs.
+
+    Key Features:
+    - Registers custom hotkey actions and binds them to inputs via the game's input API.
+    - Integrates with the Options Menu to display hotkey bindings in a dedicated section.
+    - Supports gamepad and joystick inputs alongside keyboard, using native input APIs.
+    - Provides event-driven communication with MD for action updates and input remapping.
+    - Includes robust error handling and debug logging for production reliability.
+
+    Integration Notes:
+    - Hooks into `gameoptions.lua` by overriding `displayControls`, `remapInput`, and input registration functions.
+    - Uses NPC blackboard (`sn_hotkey_api`) to store and retrieve hotkey bindings.
+    - Compatible with X4 Foundations versions 6.0 and 7.0+, including the 7.6 hotkey UI overhaul.
+    - Suppresses direct text input to prevent conflicts with hotkey execution during typing.
+    - Supports dynamic menu patching to handle menu open/close events and periodic checks.
+
+    Usage:
+    - MD scripts register actions via the `Hotkey.Update_Actions` event.
+    - Players bind hotkeys in the Options Menu, which are saved to the blackboard and signaled to MD.
+    - Debug logs (controlled by `isDebug`) aid troubleshooting during development.
+
+    Limitations:
+    - Requires gamepad/joystick events (`gamepadInput`, `joystickInput`) to be supported by the game's input API.
+    - Assumes compatibility with `gameoptions.lua` input APIs; may need updates if new APIs are introduced.
+    ]]
+
     local isDebug = true -- Set to false for production to reduce logging overhead
     
+    -- FFI setup for native input functions
     local ffi = require("ffi")
     local C = ffi.C
     ffi.cdef [[
@@ -14,6 +43,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function
         void ClearCustomControlAction(UniverseID controllableid, const char* actionid, int inputtype, int inputindex, int slot);
     ]]
 
+    -- Imports from mod support APIs
     local Lib = require("extensions.sn_mod_support_apis.ui.Library")
     local Time = require("extensions.sn_mod_support_apis.ui.time.Interface")
     local T = require("extensions.sn_mod_support_apis.ui.Text")
@@ -138,11 +168,13 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function
                 L.player_action_keys[actionid] = blackboard[actionid]
             end
         end
-        if menu then
+        if menu and menu.optionTable then
             menu.displayControls()
+            -- Debug: Log key binding read complete
+            if isDebug then DebugError("[Hotkey.Interface] Read_Player_Keys: Read bindings for " .. tostring(#action_list) .. " actions") end
+        else
+            DebugError("[Hotkey.Interface] Skipping displayControls: menu or optionTable not ready")
         end
-        -- Debug: Log key binding read complete
-        if isDebug then DebugError("[Hotkey.Interface] Read_Player_Keys: Read bindings for " .. tostring(#action_list) .. " actions") end
     end
 
     --- Updates the MD pipe connection status.
@@ -210,17 +242,32 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function
     end
 
     --- Displays custom hotkey rows in the Options Menu.
+    --- Ensures the original gameoptions.lua displayControls is called to initialize menu.optionsTable,
+    --- then appends custom hotkey rows for actions in the action registry.
     --- @param preselectOption any Option to preselect in the menu
     --- @param ... any Additional arguments from original displayControls
     function L.displayControls(preselectOption, ...)
         if isDebug then DebugError("[Hotkey.Interface] displayControls: Adding custom hotkey rows") end
         -- Debug: Log display controls start
-        local table = menu.optionsTable
-        if not table then
-            DebugError("[Hotkey.Interface] displayControls: No options table found")
-            return
+
+        -- Call the original displayControls to ensure menu.optionsTable is initialized
+        if L.ego_displayControls then
+            local success, error = pcall(L.ego_displayControls, preselectOption, ...)
+            if not success then
+                DebugError("[Hotkey.Interface] displayControls: Original displayControls failed: " .. tostring(error))
+            end
+        else
+            DebugError("[Hotkey.Interface] displayControls: ego_displayControls not available")
         end
 
+        -- Verify menu and optionsTable exist
+        if not menu or not menu.optionsTable then
+            DebugError("[Hotkey.Interface] displayControls: No menu or optionsTable found")
+            return
+        end
+        local table = menu.optionsTable
+
+        -- Find or create the keyboard_space section
         local keyboard_space = nil
         for _, section in ipairs(table) do
             if section[1] == "keyboard_space" then
@@ -235,14 +282,15 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function
             if isDebug then DebugError("[Hotkey.Interface] displayControls: Created new keyboard_space section") end
         end
 
-        for actionid, action in pairs(L.action_registry) do
+        -- Add custom hotkey rows
+        for actionid, action in pairs(L.action_registry or {}) do
             local blackboard = GetNPCBlackboard(L.player_id, "sn_hotkey_api") or {}
             local bindings = blackboard[actionid] or {}
             local primary = bindings[1] or { inputtype = 1, inputindex = 0, modifier = 0 }
             local secondary = bindings[2] or { inputtype = 1, inputindex = 0, modifier = 0 }
 
-            local primary_name = primary.inputindex > 0 and C.GetInputName(primary.inputtype, primary.inputindex) or ""
-            local secondary_name = secondary.inputindex > 0 and C.GetInputName(secondary.inputtype, secondary.inputindex) or ""
+            local primary_name = primary.inputindex > 0 and (C.GetInputName(primary.inputtype, primary.inputindex) or "") or ""
+            local secondary_name = secondary.inputindex > 0 and (C.GetInputName(secondary.inputtype, secondary.inputindex) or "") or ""
 
             keyboard_space[2][#keyboard_space[2] + 1] = {
                 { arrow = true },
@@ -251,7 +299,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.hotkey.Interface", function
                 { "", onClick = function() menu.buttonControl(actionid, 2) end, displayValue = secondary_name }
             }
             -- Debug: Log added hotkey row
-            if isDebug then DebugError("[Hotkey.Interface] displayControls: Added row for action " .. actionid) end
+            if isDebug then DebugError("[Hotkey.Interface] displayControls: Added row for action " .. tostring(actionid)) end
         end
     end
 

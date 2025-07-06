@@ -100,7 +100,7 @@ writing and reading functions are shown here.
     function L.Init()
         -- 1) Listen for Process_Command events from MD.
         if not __pipe_callback_registered then
-            RegisterEvent("pipeProcessCommand", my_function)
+            RegisterEvent("pipeProcessCommand", L.Process_Command)
             __pipe_callback_registered = true
             if isDebug then DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler") end -- Debug: Log event registration
         end

@@ -1,0 +1,8 @@
+{
+  "Lua.workspace.library": [
+    "${workspaceFolder}/x4_api_stubs.lua"
+  ],
+  "Lua.diagnostics.globals": [
+    //Skip, styub is doing this
+  ]
+}

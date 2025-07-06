@@ -101,7 +101,7 @@ writing and reading functions are shown here.
         -- 1) Listen for Process_Command events from MD.
         if not __pipe_callback_registered then
             RegisterEvent("pipeProcessCommand", L.Process_Command)
-            local __pipe_callback_registered = true
+            __pipe_callback_registered = true
             if isDebug then DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler") end -- Debug: Log event registration
         end
 

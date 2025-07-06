@@ -95,39 +95,70 @@ writing and reading functions are shown here.
         -- Fields holding booleans.
         bool_fields = {'continuous'}
     }
-    -- Called once on load: registers event handlers, clears state, and
-    -- performs an initial probe to open read+write handles on the pipe.
+
+    -- Flag to track if the pipe callback is registered.
+    -- This is used to prevent multiple registrations.
+    __pipe_callback_registered = __pipe_callback_registered or false
+
+    -- Initialize and register events.
     function L.Init()
-        -- 1) Listen for Process_Command events from MD.
+        -- 1) one-time event hookup
         if not __pipe_callback_registered then
             RegisterEvent("pipeProcessCommand", L.Process_Command)
             __pipe_callback_registered = true
-            if isDebug then DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler") end -- Debug: Log event registration
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler")
+            end
         end
 
-        -- 2) Compute and cache the player-specific blackboard key.
-        L.player_id = ConvertStringTo64Bit(tostring(C.GetPlayerID()))
-        if isDebug then DebugError("[Pipes.Interface] Init: Cached player ID: " .. tostring(L.player_id)) end -- Debug: Log player ID caching
+        -- 1.b) start polling for a valid player ID
+        RegisterEvent("onGameFrame", L._OnFrame_CheckPlayer)
+    end
 
-        -- 3) Clear any leftover arguments in the player blackboard.
-        SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-        if isDebug then DebugError("[Pipes.Interface] Init: Cleared pipe_api_args from player blackboard") end -- Debug: Log blackboard clearing
+    -- Stage 2 of the L.Init()
+    -- runs each frame until we get a real player ID
+    function L._OnFrame_CheckPlayer()
+        local raw_id = C.GetPlayerID() or 0
+        if raw_id > 0 then
+            -- stop polling
+            UnregisterEvent("onGameFrame", L._OnFrame_CheckPlayer)
 
-        -- 4) Notify the Python server that the Lua interface is reloaded.
-        Lib.Raise_Signal('reloaded')
-        if isDebug then DebugError("[Pipes.Interface] Init: Raised reloaded signal") end -- Debug: Log reload signal
+            -- 2) cache the 64-bit key
+            L.player_id = ConvertStringTo64Bit(tostring(raw_id))
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Cached player ID: " .. tostring(L.player_id))
+            end
 
-        -- 5) Enqueue a dummy Read to force the client to open the read handle.
-        Pipes.Schedule_Read("x4_python_host", "init_probe", false)
-        if isDebug then DebugError("[Pipes.Interface] Init: Scheduled dummy read for x4_python_host, callback: init_probe") end -- Debug: Log dummy read
+            -- 3) clear leftover args
+            SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Cleared pipe_api_args from player blackboard")
+            end
 
-        -- 6) Enqueue a dummy Write to force the client to open the write handle.
-        Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
-        if isDebug then DebugError("[Pipes.Interface] Init: Scheduled dummy write for x4_python_host, callback: init_probe, message: ping") end -- Debug: Log dummy write
+            -- 4) notify Python server
+            Lib.Raise_Signal("reloaded")
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Raised reloaded signal")
+            end
 
-        -- 7) Explicitly attempt Connect_Pipe to expedite the handshake.
-        pcall(Pipes.Connect_Pipe, "x4_python_host")
-        if isDebug then DebugError("[Pipes.Interface] Init: Attempted Connect_Pipe for x4_python_host") end -- Debug: Log connect attempt
+            -- 5) dummy Read
+            Pipes.Schedule_Read("x4_python_host", "init_probe", false)
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Scheduled dummy read for x4_python_host, callback: init_probe")
+            end
+
+            -- 6) dummy Write
+            Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Scheduled dummy write for x4_python_host, callback: init_probe, message: ping")
+            end
+
+            -- 7) expedite handshake
+            pcall(Pipes.Connect_Pipe, "x4_python_host")
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Attempted Connect_Pipe for x4_python_host")
+            end
+        end
     end
 
     -- Get args from the player blackboard, and return the next entry.

@@ -1,637 +1,637 @@
 ﻿---@diagnostic disable: undefined-global, lowercase-global
 
-function __call() end
-function __index() end
-function __newindex() end
-function abortScan() end
-function activateAdditionalIcon() end
-function activateAimTargetElement() end
-function activateBar() end
-function activateBar2() end
-function activateCollectable() end
-function activateCommanderElement() end
-function activateCompass() end
-function activateCrosshair() end
-function activateDebugLine() end
-function activateDebugOutline() end
-function activateDronePanel() end
-function activateDroneType() end
-function activateFactionLadder() end
-function activateFill() end
-function activateHullShield() end
-function activateIcon() end
-function activateIconElements() end
-function activateInteractElement() end
-function activateMessageTickerBar() end
-function activateMessageTickerText() end
-function activateMissileIncoming() end
-function activateMissileLock() end
-function activateMissionArrow() end
-function activateMonitor() end
-function activateOutline() end
-function activateOverlay() end
-function activateOxygenBar() end
-function activatePlayerShieldbar() end
-function activateProgressbar() end
-function activatePromo() end
-function activateRadarPicking() end
-function activateRectangleElements() end
-function activateSeparateRadar() end
-function activateSeta() end
-function activateSofttarget() end
-function activateState() end
-function activateTargetArrow() end
-function activateTargetIndicator() end
-function activateTargetMonitorRadar() end
-function activateTargetRectangle() end
-function activateWeaponPanel() end
-function activationScan() end
-function active() end
-function addDebugMessage() end
-function AddGlobalAccess() end
-function bgColor() end
-function calculateHalfMaxHorizontalScreenExtents() end
-function calculateHalfMaxVerticalScreenExtents() end
-function calculateTargetPriority() end
-function callback() end
-function CallEventScripts() end
-function CallHotkeyScripts() end
-function CallTabScrollScripts() end
-function CallUpdateScripts() end
-function CallWidgetEventScripts() end
-function cameraDistanceSorter() end
-function canMessageBeSofttarget() end
-function changePendingSofttarget() end
-function changePriorityMissionTarget() end
-function changeState() end
-function checkMessageTickerActivation() end
-function checkPendingSofttargetChange() end
-function checkRadarActivation() end
-function checkSofttargetChange() end
-function clearDataOnVersionChange() end
-function clickDialogButton() end
-function closeCurrentState() end
-function closeMenu() end
-function collapseHandler() end
-function color() end
-function colorDroneType() end
-function connectTargetElement() end
-function constructPlaceholderText() end
-function constructTargetElementData() end
-function convertHorizontalAlignment() end
-function convertVerticalAlignment() end
-function createAxisPropertyInfo() end
-function createDescriptors() end
-function createFrameTexturePropertyInfo() end
-function createHotkeyPropertyInfo() end
-function createIconPropertyInfo() end
-function createOverlayPropertyInfo() end
-function createSink() end
-function createTargetElement() end
-function createTargetSystemClones() end
-function createTextPropertyInfo() end
-function data() end
-function deactivateAdditionalIcon() end
-function deactivateAimTargetElement() end
-function deactivateBar() end
-function deactivateBar2() end
-function deactivateBottomText() end
-function deactivateCollectable() end
-function deactivateCommanderElement() end
-function deactivateCompass() end
-function deactivateCrosshair() end
-function deactivateCutscene() end
-function deactivateDebugLine() end
-function deactivateDebugOutline() end
-function deactivateDronePanel() end
-function deactivateDroneType() end
-function deactivateFactionLadder() end
-function deactivateFill() end
-function deactivateHullShield() end
-function deactivateIcon() end
-function deactivateIconElements() end
-function deactivateInteractElement() end
-function deactivateInteraction() end
-function deactivateMessageTickerLine() end
-function deactivateMissileIncoming() end
-function deactivateMissileLock() end
-function deactivateMissileLocks() end
-function deactivateMissionArrow() end
-function deactivateMonitor() end
-function deactivateOffScreenBox() end
-function deactivateOutline() end
-function deactivateOverlay() end
-function deactivateOxygenBar() end
-function deactivatePlayerShieldbar() end
-function deactivateProgressbar() end
-function deactivatePromo() end
-function deactivateRadarPicking() end
-function deactivateRectangleElements() end
-function deactivateSeparateRadar() end
-function deactivateSeta() end
-function deactivateSideText() end
-function deactivateSideText2() end
-function deactivateSofttarget() end
-function deactivateState() end
-function deactivateTargetArrow() end
-function deactivateTargetIndicator() end
-function deactivateTargetMonitorNotification() end
-function deactivateTargetMonitorRadar() end
-function deactivateTargetRectangle() end
-function deactivateWeaponPanel() end
-function deg2rad() end
-function disableDroneTypeInteractions() end
-function disconnectElement() end
-function display() end
-function displayAimTargetElement() end
-function displayInactiveMissionLine() end
-function displayMissionBar() end
-function displayMissionDetails() end
-function displayOption() end
-function duration() end
-function emms() end
-function enableDroneTypeInteractions() end
-function enableRadar() end
-function enableSeparateRadar() end
-function expandHandler() end
-function f16() end
-function finalizeFlowchartCellSlots() end
-function finalizeTableColumnWidths() end
-function finishScan() end
-function flush() end
-function fofs() end
-function formatValue() end
-function fp() end
-function get() end
-function getAimAtTargetIndicatorPosition() end
-function getCameraDistanceBasedParameterValue() end
-function getCellHeight() end
-function getComponentHUDIcon() end
-function getComponentIcon() end
-function getCounterMeasurePosition() end
-function getCurrentCrosshairMessage() end
-function getCurrentType() end
-function getDebugMessage() end
-function getDistanceText() end
-function getIconSize() end
-function getLEDColor() end
-function GetLiveData() end
-function getMinTargetDelay() end
-function getOverlayCellData() end
-function getPOIIcon() end
-function getPointerID() end
-function getRectanglePositions() end
-function getSectionBaseParam() end
-function getShipOrLaserTowerSize() end
-function getSquareDistanceToCenter() end
-function getTargetConeRatio() end
-function getTargetElementByMessageID() end
-function getTargetElementByTargetSystem() end
-function getTargetElementPosition() end
-function getTargetElementScale() end
-function getTargetIcon() end
-function GetTargetMonitorDetails() end
-function getTargetMonitorDetailsBridge() end
-function getTargetPriority() end
-function getTextChunks() end
-function getUIElementScreenPosition() end
-function handleMouseClick() end
-function handleMouseClickRadar() end
-function handleMouseDown() end
-function handleMouseDownRadar() end
-function hasActions() end
-function hasPossibleActions() end
-function hasVisibleActions() end
-function hideAimTargetElement() end
-function hideBar() end
-function hideCells() end
-function hideCompass() end
-function hideDebugLine() end
-function hideDebugLog() end
-function hideDebugOutline() end
-function hideDialogMenu() end
-function hideEnvironmentInfo() end
-function hideFPSCounter() end
-function hideMissionDetails() end
-function hideMouseOverText() end
-function hideNotorietyBar() end
-function hideOverlay() end
-function hidePromo() end
-function hideSkipNote() end
-function hideSofttarget() end
-function hideTargetMonitorNotification() end
-function highlightColor() end
-function info() end
-function infotext() end
-function init() end
-function initButtonList() end
-function initCells() end
-function initDebugLogData() end
-function initDronePanel() end
-function initDynamicTargetElementData() end
-function initEnvironmentObjectSupport() end
-function initIcon() end
-function initMissionBarScale() end
-function initMousePicking() end
-function initNotifications() end
-function initNotorietyData() end
-function initPlayerHullShield() end
-function initPointerPicking() end
-function initProverb() end
-function initRadarPicking() end
-function initScale() end
-function initSeta() end
-function initTableCell() end
-function initTargetElement() end
-function initVRTexts() end
-function initWeaponPanel() end
-function isBlinkingLED() end
-function isCrosshairTarget() end
-function isCurrentAimTargetElementActive() end
-function isDebugLogActive() end
-function isFirstPersonMode() end
-function isHighestState() end
-function isIconPropertyFunctionCell() end
-function isInactiveTargetElementState() end
-function isInTargetCone() end
-function isInWeaponRange() end
-function isObstructed() end
-function isSeparateRadarEnabled() end
-function isShipPOI() end
-function isSmallShip() end
-function isSomethingToDisplay() end
-function isTargetable() end
-function isTargetElementPendingDeletion() end
-function isTargetMonitorRadarEnabled() end
-function isTextPropertyFunctionCell() end
-function isValidTargetMonitorDetailsBridgeData() end
-function leaveDialogMenu() end
-function lerpColorModeColor() end
-function listOptions() end
-function MakeGlobalAvailable() end
-function makeTargetElementKnown() end
-function mouseOverText() end
-function name() end
-function neg_selectable() end
-function negative() end
-function nop() end
-function normalizeAngle() end
-function onActiveWeaponGroupChanged() end
-function onButtonSelectDown() end
-function onButtonSelectLeft() end
-function onButtonSelectRight() end
-function onButtonSelectUp() end
-function onChangedEnvironmentObject() end
-function onChatRead() end
-function onChatReceived() end
-function onChatUpdateHandler() end
-function onCheckUsername() end
-function onClear() end
-function onConversationFinished() end
-function onConversationStarted() end
-function onCopy() end
-function onCutsceneReady() end
-function onCutsceneStopped() end
-function onDebugLog() end
-function onDebugLogViewCreated() end
-function onDialog1MouseClick() end
-function onDialog1MouseOver() end
-function onDialog1POVOver() end
-function onDialog2MouseClick() end
-function onDialog2MouseOver() end
-function onDialog2POVOver() end
-function onDialog3MouseClick() end
-function onDialog3MouseOver() end
-function onDialog3POVOver() end
-function onDialog4MouseClick() end
-function onDialog4MouseOver() end
-function onDialog4POVOver() end
-function onDialog5MouseClick() end
-function onDialog5MouseOver() end
-function onDialog5POVOver() end
-function onDialog6MouseClick() end
-function onDialog6MouseOver() end
-function onDialog6POVOver() end
-function onDroneClick() end
-function onDroneModeClick() end
-function onDroneModeOut() end
-function onDroneModeOver() end
-function onDroneOut() end
-function onDroneOver() end
-function onEnableMouseOverText() end
-function onEnableRadar() end
-function onEnableSeparateRadar() end
-function onEnterDialogMenu() end
-function onExternalTargetView() end
-function onExternalTargetViewActive() end
-function onExternalTargetViewInactive() end
-function onFirstButton() end
-function onFlightControlStarted() end
-function onFlightControlStopped() end
-function onFrameCounterViewCreated() end
-function onFrameHandleViewCreated() end
-function onGamePaused() end
-function onGamePlanChange() end
-function onGameUnpaused() end
-function onHideCompass() end
-function onHideDebugLine() end
-function onHideDebugLog() end
-function onHideFPS() end
-function onHideFPSCounter() end
-function onHideInfoBar() end
-function onHidePromo() end
-function onHotkey() end
-function onIncomingMail() end
-function onInputModeChanged() end
-function onInteractionHidden() end
-function onInteractionShown() end
-function onInventoryWaresAdded() end
-function onLastButton() end
-function onLeaveDialogMenu() end
-function onLoadingDone() end
-function onMailRead() end
-function onMissileIncoming() end
-function onMissileLockInitiated() end
-function onMissileLockLost() end
-function onMissionInfoUpdate() end
-function onMissionObjectiveBarUpdate() end
-function onMissionPosIDConnected() end
-function onMissionPosIDDisconnected() end
-function onMouseClick() end
-function onMouseClickMessageTickerChatNotification() end
-function onMouseClickMessageTickerFooter() end
-function onMouseClickMessageTickerNotification() end
-function onMouseClickMessageTickerRow1() end
-function onMouseClickTargetMonitor() end
-function onMouseDown() end
-function onMouseOut() end
-function onMouseOver() end
-function onMouseUp() end
-function onNextButton() end
-function onNotificationFreed() end
-function onNumMissionsChanged() end
-function onPlatformFriendsLookedUp() end
-function onPlayerActivityChanged() end
-function onPrevButton() end
-function onPriorityMissiontargetChanged() end
-function onReceiveContacts() end
-function onReducedSpeedModeActivated() end
-function onReducedSpeedModeDeactivated() end
-function onReenable() end
-function onRefreshTargetMonitor() end
-function onResetHUDColors() end
-function onScanAborted() end
-function onScanFinished() end
-function onScanStarted() end
-function onSetaActivated() end
-function onSetaDeactivated() end
-function onShowCompass() end
-function onShowDebugLine() end
-function onShowGameOver() end
-function onShowInfoBar() end
-function onShowNotification() end
-function onShowPromo() end
-function onSkipScreenshot() end
-function onSofttargetChanged() end
-function onStartDialog() end
-function onStopDialog() end
-function onTeleportSucceeded() end
-function onTickerOnlyMode() end
-function onToggleAssert() end
-function onToggleAssertPopUp() end
-function onToggleErrorPopUp() end
-function onToggleOptionalAssert() end
-function onToggleOptionalAssertPopUp() end
-function onToggleRadarMode() end
-function onToggleShowFPSButton() end
-function onTurretClick() end
-function onTurretModeClick() end
-function onTurretModeOut() end
-function onTurretModeOver() end
-function onTurretOut() end
-function onTurretOver() end
-function onUnlock() end
-function onUpdate() end
-function onUpdateColorMap() end
-function onUpdateHandler() end
-function onUpdateHUDColors() end
-function onVoiceOutput() end
-function onVRPointerChanged() end
-function onWeaponGroupChanged() end
-function opc2() end
-function opc3() end
-function performSelectSofttargetOnClick() end
-function pos_selectable() end
-function positive() end
-function precacheScreenshots() end
-function prefixicon() end
-function prepareLiveUpdateText() end
-function processConnectionList() end
-function processEnterInteractMenuEvent() end
-function processInteractionDescriptor() end
-function processLiveUpdateValues() end
-function processMessageTickerNotifications() end
-function processOverlay() end
-function processSofttargetChange() end
-function queueNotification() end
-function ReadText() end
-function RegisterEvent() end
-function registerMouseButton() end
-function removeAllPointerOverrides() end
-function removeAutoLock() end
-function removeFill() end
-function removeOldestMessage() end
-function removeOutline() end
-function RemoveScript() end
-function removeSofttargetLockRequest() end
-function removeStateRequest() end
-function requestSofttargetLock() end
-function requestState() end
-function resetElement() end
-function resetScheduledShowDialogMenu() end
-function resetTargetSystem() end
-function resolutionsort() end
-function resultfunc() end
-function rex() end
-function scaleFont() end
-function scheduleAutoLock() end
-function scheduleShowDialogMenu() end
-function script() end
-function selectable() end
-function selectDialogButton() end
-function set() end
-function setAutoCrosshairTargetSelection() end
-function setBarState() end
-function setBottomText() end
-function setCellOpacities() end
-function setCellOpacity() end
-function setCentralElementsPosition() end
-function setCheckedText() end
-function setColoredText() end
-function setColorHelper() end
-function setDecoColors() end
-function setDecoColorsWithIntensity() end
-function setDialogButtonColor() end
-function setDisplayMode() end
-function SetEGOGlobals() end
-function setElementColorAlpha() end
-function setElementTextColor() end
-function setExternalFirstPersonMode() end
-function setFirstPersonAutoTargeting() end
-function setFirstPersonMode() end
-function setGamepadMode() end
-function setHintText() end
-function setIconPos() end
-function setJoystickMode() end
-function setMissileLockColor() end
-function setMissileLockState() end
-function setMouseMode() end
-function setMouseOverPosition() end
-function setMouseOverTextEnabled() end
-function setMultilineLeftRightText() end
-function setObstructionBasedColor() end
-function setPercentage() end
-function setPointerOverride() end
-function setPosition() end
-function setProgressText() end
-function SetScript() end
-function setShipMode() end
-function setSideText() end
-function setSideText2() end
-function setSpaceMode() end
-function setTableColumnWidthData() end
-function setTargetElementColor() end
-function setTextColor() end
-function setTextElement() end
-function setTextLine() end
-function setTextWithLineBreaks() end
-function setTouchControllerMode() end
-function setTurretColor() end
-function setTurretMode() end
-function setWeaponColor() end
-function shouldDisplayNotorietyBar() end
-function showBar() end
-function showCell() end
-function showCompass() end
-function showDebugLine() end
-function showDebugLog() end
-function showDebugOutline() end
-function showDialogMenu() end
-function showEnvironmentInfo() end
-function showFill() end
-function showFPSCounter() end
-function showGameOver() end
-function showMouseOverText() end
-function showNotification() end
-function showNotorietyBar() end
-function showOutline() end
-function showOverlay() end
-function showPromo() end
-function showSkipNote() end
-function showSofttarget() end
-function sliderHandler() end
-function sortDebugLog() end
-function sorter() end
-function startScan() end
-function startSofttargetInteraction() end
-function statusText() end
-function switchButton() end
-function switchScreenshot() end
-function switchTargetMonitorNotification() end
-function sz() end
-function test1() end
-function test2() end
-function toggleDebugLog() end
-function toggleRadarMode() end
-function ToReprString() end
-function truncateLeftRightText() end
-function unmapDialogButton() end
-function UnregisterEvent() end
-function unselectDialogButton() end
-function unselectMouseJoystickButton() end
-function unsetPointerOverride() end
-function updateActiveState() end
-function updateActivityColor() end
-function updateAimTargetElement() end
-function updateAllOutlines() end
-function updateAllPointerOverrides() end
-function updateArrowState() end
-function updateBoostBar() end
-function updateBottomText() end
-function updateButtons() end
-function updateChatNotification() end
-function updateCheckEngineLight() end
-function updateColor() end
-function updateControllerSelection() end
-function updateCountermeasures() end
-function updateCoverLine() end
-function updateDebugMessage() end
-function updateDebugOutlines() end
-function updateDialogMenuButtons() end
-function updateDronePanel() end
-function updateDroneType() end
-function updateDynamicRectangleIcons() end
-function updateElementPosition() end
-function updateFPS() end
-function updateHullShield() end
-function updateIcon() end
-function updateIconSize() end
-function updateIndicators() end
-function updateIndicatorScalePositionAndActivation() end
-function updateInteractiveText() end
-function updateMailNotification() end
-function updateMatchSpeedElement() end
-function updateMessages() end
-function updateMessageStartTimes() end
-function updateMessageTicker() end
-function updateMissileLock() end
-function updateMissileLockColor() end
-function updateMissileLocks() end
-function updateMissionArrow() end
-function updateMissionDetails() end
-function updateMousePosition() end
-function updateMouseSteeringLine() end
-function updateNotorietyLadder() end
-function updateOffScreenBox() end
-function updateOutline() end
-function updateOxygenBar() end
-function updatePointerOverride() end
-function updateProgressbar() end
-function updateRadar() end
-function updateRadarExtents() end
-function updateRadarTarget() end
-function updateRectangleElements() end
-function updateReenableButton() end
-function updateRelation() end
-function updateRelationStatusData() end
-function updateScenarioTexts() end
-function updateScreenshots() end
-function updateSelectedButton() end
-function updateSelection() end
-function updateSeta() end
-function updateSideText() end
-function updateSideText2() end
-function updateSideTextPosition() end
-function updateSofttargetLock() end
-function updateSofttargetManager() end
-function updateSofttargetManagerActivationState() end
-function updateSofttargetTargetElement() end
-function updateSpeedbar() end
-function updateState() end
-function updateStates() end
-function updateTargetArrow() end
-function updateTargetElement() end
-function updateTargetElementData() end
-function updateTargetElementPosition() end
-function updateTargetMonitorDisplay() end
-function updateTargetMonitorNotifications() end
-function updateTargetText() end
-function updateText() end
-function updateVelocityIndicator() end
-function updateWeaponGroup() end
-function updateWeaponPanel() end
-function upgradeData() end
-function value() end
-function vex() end
-function vm() end
-function warning() end
+function __call(widget, eventName, ...) end
+function __index(widget, eventName, ...) end
+function __newindex(widget, eventName, ...) end
+function abortScan(widget, eventName, ...) end
+function activateAdditionalIcon(widget, eventName, ...) end
+function activateAimTargetElement(widget, eventName, ...) end
+function activateBar(widget, eventName, ...) end
+function activateBar2(widget, eventName, ...) end
+function activateCollectable(widget, eventName, ...) end
+function activateCommanderElement(widget, eventName, ...) end
+function activateCompass(widget, eventName, ...) end
+function activateCrosshair(widget, eventName, ...) end
+function activateDebugLine(widget, eventName, ...) end
+function activateDebugOutline(widget, eventName, ...) end
+function activateDronePanel(widget, eventName, ...) end
+function activateDroneType(widget, eventName, ...) end
+function activateFactionLadder(widget, eventName, ...) end
+function activateFill(widget, eventName, ...) end
+function activateHullShield(widget, eventName, ...) end
+function activateIcon(widget, eventName, ...) end
+function activateIconElements(widget, eventName, ...) end
+function activateInteractElement(widget, eventName, ...) end
+function activateMessageTickerBar(widget, eventName, ...) end
+function activateMessageTickerText(widget, eventName, ...) end
+function activateMissileIncoming(widget, eventName, ...) end
+function activateMissileLock(widget, eventName, ...) end
+function activateMissionArrow(widget, eventName, ...) end
+function activateMonitor(widget, eventName, ...) end
+function activateOutline(widget, eventName, ...) end
+function activateOverlay(widget, eventName, ...) end
+function activateOxygenBar(widget, eventName, ...) end
+function activatePlayerShieldbar(widget, eventName, ...) end
+function activateProgressbar(widget, eventName, ...) end
+function activatePromo(widget, eventName, ...) end
+function activateRadarPicking(widget, eventName, ...) end
+function activateRectangleElements(widget, eventName, ...) end
+function activateSeparateRadar(widget, eventName, ...) end
+function activateSeta(widget, eventName, ...) end
+function activateSofttarget(widget, eventName, ...) end
+function activateState(widget, eventName, ...) end
+function activateTargetArrow(widget, eventName, ...) end
+function activateTargetIndicator(widget, eventName, ...) end
+function activateTargetMonitorRadar(widget, eventName, ...) end
+function activateTargetRectangle(widget, eventName, ...) end
+function activateWeaponPanel(widget, eventName, ...) end
+function activationScan(widget, eventName, ...) end
+function active(widget, eventName, ...) end
+function addDebugMessage(widget, eventName, ...) end
+function AddGlobalAccess(widget, eventName, ...) end
+function bgColor(widget, eventName, ...) end
+function calculateHalfMaxHorizontalScreenExtents(widget, eventName, ...) end
+function calculateHalfMaxVerticalScreenExtents(widget, eventName, ...) end
+function calculateTargetPriority(widget, eventName, ...) end
+function callback(widget, eventName, ...) end
+function CallEventScripts(widget, eventName, ...) end
+function CallHotkeyScripts(widget, eventName, ...) end
+function CallTabScrollScripts(widget, eventName, ...) end
+function CallUpdateScripts(widget, eventName, ...) end
+function CallWidgetEventScripts(widget, eventName, ...) end
+function cameraDistanceSorter(widget, eventName, ...) end
+function canMessageBeSofttarget(widget, eventName, ...) end
+function changePendingSofttarget(widget, eventName, ...) end
+function changePriorityMissionTarget(widget, eventName, ...) end
+function changeState(widget, eventName, ...) end
+function checkMessageTickerActivation(widget, eventName, ...) end
+function checkPendingSofttargetChange(widget, eventName, ...) end
+function checkRadarActivation(widget, eventName, ...) end
+function checkSofttargetChange(widget, eventName, ...) end
+function clearDataOnVersionChange(widget, eventName, ...) end
+function clickDialogButton(widget, eventName, ...) end
+function closeCurrentState(widget, eventName, ...) end
+function closeMenu(widget, eventName, ...) end
+function collapseHandler(widget, eventName, ...) end
+function color(widget, eventName, ...) end
+function colorDroneType(widget, eventName, ...) end
+function connectTargetElement(widget, eventName, ...) end
+function constructPlaceholderText(widget, eventName, ...) end
+function constructTargetElementData(widget, eventName, ...) end
+function convertHorizontalAlignment(widget, eventName, ...) end
+function convertVerticalAlignment(widget, eventName, ...) end
+function createAxisPropertyInfo(widget, eventName, ...) end
+function createDescriptors(widget, eventName, ...) end
+function createFrameTexturePropertyInfo(widget, eventName, ...) end
+function createHotkeyPropertyInfo(widget, eventName, ...) end
+function createIconPropertyInfo(widget, eventName, ...) end
+function createOverlayPropertyInfo(widget, eventName, ...) end
+function createSink(widget, eventName, ...) end
+function createTargetElement(widget, eventName, ...) end
+function createTargetSystemClones(widget, eventName, ...) end
+function createTextPropertyInfo(widget, eventName, ...) end
+function data(widget, eventName, ...) end
+function deactivateAdditionalIcon(widget, eventName, ...) end
+function deactivateAimTargetElement(widget, eventName, ...) end
+function deactivateBar(widget, eventName, ...) end
+function deactivateBar2(widget, eventName, ...) end
+function deactivateBottomText(widget, eventName, ...) end
+function deactivateCollectable(widget, eventName, ...) end
+function deactivateCommanderElement(widget, eventName, ...) end
+function deactivateCompass(widget, eventName, ...) end
+function deactivateCrosshair(widget, eventName, ...) end
+function deactivateCutscene(widget, eventName, ...) end
+function deactivateDebugLine(widget, eventName, ...) end
+function deactivateDebugOutline(widget, eventName, ...) end
+function deactivateDronePanel(widget, eventName, ...) end
+function deactivateDroneType(widget, eventName, ...) end
+function deactivateFactionLadder(widget, eventName, ...) end
+function deactivateFill(widget, eventName, ...) end
+function deactivateHullShield(widget, eventName, ...) end
+function deactivateIcon(widget, eventName, ...) end
+function deactivateIconElements(widget, eventName, ...) end
+function deactivateInteractElement(widget, eventName, ...) end
+function deactivateInteraction(widget, eventName, ...) end
+function deactivateMessageTickerLine(widget, eventName, ...) end
+function deactivateMissileIncoming(widget, eventName, ...) end
+function deactivateMissileLock(widget, eventName, ...) end
+function deactivateMissileLocks(widget, eventName, ...) end
+function deactivateMissionArrow(widget, eventName, ...) end
+function deactivateMonitor(widget, eventName, ...) end
+function deactivateOffScreenBox(widget, eventName, ...) end
+function deactivateOutline(widget, eventName, ...) end
+function deactivateOverlay(widget, eventName, ...) end
+function deactivateOxygenBar(widget, eventName, ...) end
+function deactivatePlayerShieldbar(widget, eventName, ...) end
+function deactivateProgressbar(widget, eventName, ...) end
+function deactivatePromo(widget, eventName, ...) end
+function deactivateRadarPicking(widget, eventName, ...) end
+function deactivateRectangleElements(widget, eventName, ...) end
+function deactivateSeparateRadar(widget, eventName, ...) end
+function deactivateSeta(widget, eventName, ...) end
+function deactivateSideText(widget, eventName, ...) end
+function deactivateSideText2(widget, eventName, ...) end
+function deactivateSofttarget(widget, eventName, ...) end
+function deactivateState(widget, eventName, ...) end
+function deactivateTargetArrow(widget, eventName, ...) end
+function deactivateTargetIndicator(widget, eventName, ...) end
+function deactivateTargetMonitorNotification(widget, eventName, ...) end
+function deactivateTargetMonitorRadar(widget, eventName, ...) end
+function deactivateTargetRectangle(widget, eventName, ...) end
+function deactivateWeaponPanel(widget, eventName, ...) end
+function deg2rad(widget, eventName, ...) end
+function disableDroneTypeInteractions(widget, eventName, ...) end
+function disconnectElement(widget, eventName, ...) end
+function display(widget, eventName, ...) end
+function displayAimTargetElement(widget, eventName, ...) end
+function displayInactiveMissionLine(widget, eventName, ...) end
+function displayMissionBar(widget, eventName, ...) end
+function displayMissionDetails(widget, eventName, ...) end
+function displayOption(widget, eventName, ...) end
+function duration(widget, eventName, ...) end
+function emms(widget, eventName, ...) end
+function enableDroneTypeInteractions(widget, eventName, ...) end
+function enableRadar(widget, eventName, ...) end
+function enableSeparateRadar(widget, eventName, ...) end
+function expandHandler(widget, eventName, ...) end
+function f16(widget, eventName, ...) end
+function finalizeFlowchartCellSlots(widget, eventName, ...) end
+function finalizeTableColumnWidths(widget, eventName, ...) end
+function finishScan(widget, eventName, ...) end
+function flush(widget, eventName, ...) end
+function fofs(widget, eventName, ...) end
+function formatValue(widget, eventName, ...) end
+function fp(widget, eventName, ...) end
+function get(widget, eventName, ...) end
+function getAimAtTargetIndicatorPosition(widget, eventName, ...) end
+function getCameraDistanceBasedParameterValue(widget, eventName, ...) end
+function getCellHeight(widget, eventName, ...) end
+function getComponentHUDIcon(widget, eventName, ...) end
+function getComponentIcon(widget, eventName, ...) end
+function getCounterMeasurePosition(widget, eventName, ...) end
+function getCurrentCrosshairMessage(widget, eventName, ...) end
+function getCurrentType(widget, eventName, ...) end
+function getDebugMessage(widget, eventName, ...) end
+function getDistanceText(widget, eventName, ...) end
+function getIconSize(widget, eventName, ...) end
+function getLEDColor(widget, eventName, ...) end
+function GetLiveData(widget, eventName, ...) end
+function getMinTargetDelay(widget, eventName, ...) end
+function getOverlayCellData(widget, eventName, ...) end
+function getPOIIcon(widget, eventName, ...) end
+function getPointerID(widget, eventName, ...) end
+function getRectanglePositions(widget, eventName, ...) end
+function getSectionBaseParam(widget, eventName, ...) end
+function getShipOrLaserTowerSize(widget, eventName, ...) end
+function getSquareDistanceToCenter(widget, eventName, ...) end
+function getTargetConeRatio(widget, eventName, ...) end
+function getTargetElementByMessageID(widget, eventName, ...) end
+function getTargetElementByTargetSystem(widget, eventName, ...) end
+function getTargetElementPosition(widget, eventName, ...) end
+function getTargetElementScale(widget, eventName, ...) end
+function getTargetIcon(widget, eventName, ...) end
+function GetTargetMonitorDetails(widget, eventName, ...) end
+function getTargetMonitorDetailsBridge(widget, eventName, ...) end
+function getTargetPriority(widget, eventName, ...) end
+function getTextChunks(widget, eventName, ...) end
+function getUIElementScreenPosition(widget, eventName, ...) end
+function handleMouseClick(widget, eventName, ...) end
+function handleMouseClickRadar(widget, eventName, ...) end
+function handleMouseDown(widget, eventName, ...) end
+function handleMouseDownRadar(widget, eventName, ...) end
+function hasActions(widget, eventName, ...) end
+function hasPossibleActions(widget, eventName, ...) end
+function hasVisibleActions(widget, eventName, ...) end
+function hideAimTargetElement(widget, eventName, ...) end
+function hideBar(widget, eventName, ...) end
+function hideCells(widget, eventName, ...) end
+function hideCompass(widget, eventName, ...) end
+function hideDebugLine(widget, eventName, ...) end
+function hideDebugLog(widget, eventName, ...) end
+function hideDebugOutline(widget, eventName, ...) end
+function hideDialogMenu(widget, eventName, ...) end
+function hideEnvironmentInfo(widget, eventName, ...) end
+function hideFPSCounter(widget, eventName, ...) end
+function hideMissionDetails(widget, eventName, ...) end
+function hideMouseOverText(widget, eventName, ...) end
+function hideNotorietyBar(widget, eventName, ...) end
+function hideOverlay(widget, eventName, ...) end
+function hidePromo(widget, eventName, ...) end
+function hideSkipNote(widget, eventName, ...) end
+function hideSofttarget(widget, eventName, ...) end
+function hideTargetMonitorNotification(widget, eventName, ...) end
+function highlightColor(widget, eventName, ...) end
+function info(widget, eventName, ...) end
+function infotext(widget, eventName, ...) end
+function init(widget, eventName, ...) end
+function initButtonList(widget, eventName, ...) end
+function initCells(widget, eventName, ...) end
+function initDebugLogData(widget, eventName, ...) end
+function initDronePanel(widget, eventName, ...) end
+function initDynamicTargetElementData(widget, eventName, ...) end
+function initEnvironmentObjectSupport(widget, eventName, ...) end
+function initIcon(widget, eventName, ...) end
+function initMissionBarScale(widget, eventName, ...) end
+function initMousePicking(widget, eventName, ...) end
+function initNotifications(widget, eventName, ...) end
+function initNotorietyData(widget, eventName, ...) end
+function initPlayerHullShield(widget, eventName, ...) end
+function initPointerPicking(widget, eventName, ...) end
+function initProverb(widget, eventName, ...) end
+function initRadarPicking(widget, eventName, ...) end
+function initScale(widget, eventName, ...) end
+function initSeta(widget, eventName, ...) end
+function initTableCell(widget, eventName, ...) end
+function initTargetElement(widget, eventName, ...) end
+function initVRTexts(widget, eventName, ...) end
+function initWeaponPanel(widget, eventName, ...) end
+function isBlinkingLED(widget, eventName, ...) end
+function isCrosshairTarget(widget, eventName, ...) end
+function isCurrentAimTargetElementActive(widget, eventName, ...) end
+function isDebugLogActive(widget, eventName, ...) end
+function isFirstPersonMode(widget, eventName, ...) end
+function isHighestState(widget, eventName, ...) end
+function isIconPropertyFunctionCell(widget, eventName, ...) end
+function isInactiveTargetElementState(widget, eventName, ...) end
+function isInTargetCone(widget, eventName, ...) end
+function isInWeaponRange(widget, eventName, ...) end
+function isObstructed(widget, eventName, ...) end
+function isSeparateRadarEnabled(widget, eventName, ...) end
+function isShipPOI(widget, eventName, ...) end
+function isSmallShip(widget, eventName, ...) end
+function isSomethingToDisplay(widget, eventName, ...) end
+function isTargetable(widget, eventName, ...) end
+function isTargetElementPendingDeletion(widget, eventName, ...) end
+function isTargetMonitorRadarEnabled(widget, eventName, ...) end
+function isTextPropertyFunctionCell(widget, eventName, ...) end
+function isValidTargetMonitorDetailsBridgeData(widget, eventName, ...) end
+function leaveDialogMenu(widget, eventName, ...) end
+function lerpColorModeColor(widget, eventName, ...) end
+function listOptions(widget, eventName, ...) end
+function MakeGlobalAvailable(widget, eventName, ...) end
+function makeTargetElementKnown(widget, eventName, ...) end
+function mouseOverText(widget, eventName, ...) end
+function name(widget, eventName, ...) end
+function neg_selectable(widget, eventName, ...) end
+function negative(widget, eventName, ...) end
+function nop(widget, eventName, ...) end
+function normalizeAngle(widget, eventName, ...) end
+function onActiveWeaponGroupChanged(widget, eventName, ...) end
+function onButtonSelectDown(widget, eventName, ...) end
+function onButtonSelectLeft(widget, eventName, ...) end
+function onButtonSelectRight(widget, eventName, ...) end
+function onButtonSelectUp(widget, eventName, ...) end
+function onChangedEnvironmentObject(widget, eventName, ...) end
+function onChatRead(widget, eventName, ...) end
+function onChatReceived(widget, eventName, ...) end
+function onChatUpdateHandler(widget, eventName, ...) end
+function onCheckUsername(widget, eventName, ...) end
+function onClear(widget, eventName, ...) end
+function onConversationFinished(widget, eventName, ...) end
+function onConversationStarted(widget, eventName, ...) end
+function onCopy(widget, eventName, ...) end
+function onCutsceneReady(widget, eventName, ...) end
+function onCutsceneStopped(widget, eventName, ...) end
+function onDebugLog(widget, eventName, ...) end
+function onDebugLogViewCreated(widget, eventName, ...) end
+function onDialog1MouseClick(widget, eventName, ...) end
+function onDialog1MouseOver(widget, eventName, ...) end
+function onDialog1POVOver(widget, eventName, ...) end
+function onDialog2MouseClick(widget, eventName, ...) end
+function onDialog2MouseOver(widget, eventName, ...) end
+function onDialog2POVOver(widget, eventName, ...) end
+function onDialog3MouseClick(widget, eventName, ...) end
+function onDialog3MouseOver(widget, eventName, ...) end
+function onDialog3POVOver(widget, eventName, ...) end
+function onDialog4MouseClick(widget, eventName, ...) end
+function onDialog4MouseOver(widget, eventName, ...) end
+function onDialog4POVOver(widget, eventName, ...) end
+function onDialog5MouseClick(widget, eventName, ...) end
+function onDialog5MouseOver(widget, eventName, ...) end
+function onDialog5POVOver(widget, eventName, ...) end
+function onDialog6MouseClick(widget, eventName, ...) end
+function onDialog6MouseOver(widget, eventName, ...) end
+function onDialog6POVOver(widget, eventName, ...) end
+function onDroneClick(widget, eventName, ...) end
+function onDroneModeClick(widget, eventName, ...) end
+function onDroneModeOut(widget, eventName, ...) end
+function onDroneModeOver(widget, eventName, ...) end
+function onDroneOut(widget, eventName, ...) end
+function onDroneOver(widget, eventName, ...) end
+function onEnableMouseOverText(widget, eventName, ...) end
+function onEnableRadar(widget, eventName, ...) end
+function onEnableSeparateRadar(widget, eventName, ...) end
+function onEnterDialogMenu(widget, eventName, ...) end
+function onExternalTargetView(widget, eventName, ...) end
+function onExternalTargetViewActive(widget, eventName, ...) end
+function onExternalTargetViewInactive(widget, eventName, ...) end
+function onFirstButton(widget, eventName, ...) end
+function onFlightControlStarted(widget, eventName, ...) end
+function onFlightControlStopped(widget, eventName, ...) end
+function onFrameCounterViewCreated(widget, eventName, ...) end
+function onFrameHandleViewCreated(widget, eventName, ...) end
+function onGamePaused(widget, eventName, ...) end
+function onGamePlanChange(widget, eventName, ...) end
+function onGameUnpaused(widget, eventName, ...) end
+function onHideCompass(widget, eventName, ...) end
+function onHideDebugLine(widget, eventName, ...) end
+function onHideDebugLog(widget, eventName, ...) end
+function onHideFPS(widget, eventName, ...) end
+function onHideFPSCounter(widget, eventName, ...) end
+function onHideInfoBar(widget, eventName, ...) end
+function onHidePromo(widget, eventName, ...) end
+function onHotkey(widget, eventName, ...) end
+function onIncomingMail(widget, eventName, ...) end
+function onInputModeChanged(widget, eventName, ...) end
+function onInteractionHidden(widget, eventName, ...) end
+function onInteractionShown(widget, eventName, ...) end
+function onInventoryWaresAdded(widget, eventName, ...) end
+function onLastButton(widget, eventName, ...) end
+function onLeaveDialogMenu(widget, eventName, ...) end
+function onLoadingDone(widget, eventName, ...) end
+function onMailRead(widget, eventName, ...) end
+function onMissileIncoming(widget, eventName, ...) end
+function onMissileLockInitiated(widget, eventName, ...) end
+function onMissileLockLost(widget, eventName, ...) end
+function onMissionInfoUpdate(widget, eventName, ...) end
+function onMissionObjectiveBarUpdate(widget, eventName, ...) end
+function onMissionPosIDConnected(widget, eventName, ...) end
+function onMissionPosIDDisconnected(widget, eventName, ...) end
+function onMouseClick(widget, eventName, ...) end
+function onMouseClickMessageTickerChatNotification(widget, eventName, ...) end
+function onMouseClickMessageTickerFooter(widget, eventName, ...) end
+function onMouseClickMessageTickerNotification(widget, eventName, ...) end
+function onMouseClickMessageTickerRow1(widget, eventName, ...) end
+function onMouseClickTargetMonitor(widget, eventName, ...) end
+function onMouseDown(widget, eventName, ...) end
+function onMouseOut(widget, eventName, ...) end
+function onMouseOver(widget, eventName, ...) end
+function onMouseUp(widget, eventName, ...) end
+function onNextButton(widget, eventName, ...) end
+function onNotificationFreed(widget, eventName, ...) end
+function onNumMissionsChanged(widget, eventName, ...) end
+function onPlatformFriendsLookedUp(widget, eventName, ...) end
+function onPlayerActivityChanged(widget, eventName, ...) end
+function onPrevButton(widget, eventName, ...) end
+function onPriorityMissiontargetChanged(widget, eventName, ...) end
+function onReceiveContacts(widget, eventName, ...) end
+function onReducedSpeedModeActivated(widget, eventName, ...) end
+function onReducedSpeedModeDeactivated(widget, eventName, ...) end
+function onReenable(widget, eventName, ...) end
+function onRefreshTargetMonitor(widget, eventName, ...) end
+function onResetHUDColors(widget, eventName, ...) end
+function onScanAborted(widget, eventName, ...) end
+function onScanFinished(widget, eventName, ...) end
+function onScanStarted(widget, eventName, ...) end
+function onSetaActivated(widget, eventName, ...) end
+function onSetaDeactivated(widget, eventName, ...) end
+function onShowCompass(widget, eventName, ...) end
+function onShowDebugLine(widget, eventName, ...) end
+function onShowGameOver(widget, eventName, ...) end
+function onShowInfoBar(widget, eventName, ...) end
+function onShowNotification(widget, eventName, ...) end
+function onShowPromo(widget, eventName, ...) end
+function onSkipScreenshot(widget, eventName, ...) end
+function onSofttargetChanged(widget, eventName, ...) end
+function onStartDialog(widget, eventName, ...) end
+function onStopDialog(widget, eventName, ...) end
+function onTeleportSucceeded(widget, eventName, ...) end
+function onTickerOnlyMode(widget, eventName, ...) end
+function onToggleAssert(widget, eventName, ...) end
+function onToggleAssertPopUp(widget, eventName, ...) end
+function onToggleErrorPopUp(widget, eventName, ...) end
+function onToggleOptionalAssert(widget, eventName, ...) end
+function onToggleOptionalAssertPopUp(widget, eventName, ...) end
+function onToggleRadarMode(widget, eventName, ...) end
+function onToggleShowFPSButton(widget, eventName, ...) end
+function onTurretClick(widget, eventName, ...) end
+function onTurretModeClick(widget, eventName, ...) end
+function onTurretModeOut(widget, eventName, ...) end
+function onTurretModeOver(widget, eventName, ...) end
+function onTurretOut(widget, eventName, ...) end
+function onTurretOver(widget, eventName, ...) end
+function onUnlock(widget, eventName, ...) end
+function onUpdate(widget, eventName, ...) end
+function onUpdateColorMap(widget, eventName, ...) end
+function onUpdateHandler(widget, eventName, ...) end
+function onUpdateHUDColors(widget, eventName, ...) end
+function onVoiceOutput(widget, eventName, ...) end
+function onVRPointerChanged(widget, eventName, ...) end
+function onWeaponGroupChanged(widget, eventName, ...) end
+function opc2(widget, eventName, ...) end
+function opc3(widget, eventName, ...) end
+function performSelectSofttargetOnClick(widget, eventName, ...) end
+function pos_selectable(widget, eventName, ...) end
+function positive(widget, eventName, ...) end
+function precacheScreenshots(widget, eventName, ...) end
+function prefixicon(widget, eventName, ...) end
+function prepareLiveUpdateText(widget, eventName, ...) end
+function processConnectionList(widget, eventName, ...) end
+function processEnterInteractMenuEvent(widget, eventName, ...) end
+function processInteractionDescriptor(widget, eventName, ...) end
+function processLiveUpdateValues(widget, eventName, ...) end
+function processMessageTickerNotifications(widget, eventName, ...) end
+function processOverlay(widget, eventName, ...) end
+function processSofttargetChange(widget, eventName, ...) end
+function queueNotification(widget, eventName, ...) end
+function ReadText(widget, eventName, ...) end
+function RegisterEvent(widget, eventName, ...) end
+function registerMouseButton(widget, eventName, ...) end
+function removeAllPointerOverrides(widget, eventName, ...) end
+function removeAutoLock(widget, eventName, ...) end
+function removeFill(widget, eventName, ...) end
+function removeOldestMessage(widget, eventName, ...) end
+function removeOutline(widget, eventName, ...) end
+function RemoveScript(widget, eventName, ...) end
+function removeSofttargetLockRequest(widget, eventName, ...) end
+function removeStateRequest(widget, eventName, ...) end
+function requestSofttargetLock(widget, eventName, ...) end
+function requestState(widget, eventName, ...) end
+function resetElement(widget, eventName, ...) end
+function resetScheduledShowDialogMenu(widget, eventName, ...) end
+function resetTargetSystem(widget, eventName, ...) end
+function resolutionsort(widget, eventName, ...) end
+function resultfunc(widget, eventName, ...) end
+function rex(widget, eventName, ...) end
+function scaleFont(widget, eventName, ...) end
+function scheduleAutoLock(widget, eventName, ...) end
+function scheduleShowDialogMenu(widget, eventName, ...) end
+function script(widget, eventName, ...) end
+function selectable(widget, eventName, ...) end
+function selectDialogButton(widget, eventName, ...) end
+function set(widget, eventName, ...) end
+function setAutoCrosshairTargetSelection(widget, eventName, ...) end
+function setBarState(widget, eventName, ...) end
+function setBottomText(widget, eventName, ...) end
+function setCellOpacities(widget, eventName, ...) end
+function setCellOpacity(widget, eventName, ...) end
+function setCentralElementsPosition(widget, eventName, ...) end
+function setCheckedText(widget, eventName, ...) end
+function setColoredText(widget, eventName, ...) end
+function setColorHelper(widget, eventName, ...) end
+function setDecoColors(widget, eventName, ...) end
+function setDecoColorsWithIntensity(widget, eventName, ...) end
+function setDialogButtonColor(widget, eventName, ...) end
+function setDisplayMode(widget, eventName, ...) end
+function SetEGOGlobals(widget, eventName, ...) end
+function setElementColorAlpha(widget, eventName, ...) end
+function setElementTextColor(widget, eventName, ...) end
+function setExternalFirstPersonMode(widget, eventName, ...) end
+function setFirstPersonAutoTargeting(widget, eventName, ...) end
+function setFirstPersonMode(widget, eventName, ...) end
+function setGamepadMode(widget, eventName, ...) end
+function setHintText(widget, eventName, ...) end
+function setIconPos(widget, eventName, ...) end
+function setJoystickMode(widget, eventName, ...) end
+function setMissileLockColor(widget, eventName, ...) end
+function setMissileLockState(widget, eventName, ...) end
+function setMouseMode(widget, eventName, ...) end
+function setMouseOverPosition(widget, eventName, ...) end
+function setMouseOverTextEnabled(widget, eventName, ...) end
+function setMultilineLeftRightText(widget, eventName, ...) end
+function setObstructionBasedColor(widget, eventName, ...) end
+function setPercentage(widget, eventName, ...) end
+function setPointerOverride(widget, eventName, ...) end
+function setPosition(widget, eventName, ...) end
+function setProgressText(widget, eventName, ...) end
+function SetScript(widget, eventName, ...) end
+function setShipMode(widget, eventName, ...) end
+function setSideText(widget, eventName, ...) end
+function setSideText2(widget, eventName, ...) end
+function setSpaceMode(widget, eventName, ...) end
+function setTableColumnWidthData(widget, eventName, ...) end
+function setTargetElementColor(widget, eventName, ...) end
+function setTextColor(widget, eventName, ...) end
+function setTextElement(widget, eventName, ...) end
+function setTextLine(widget, eventName, ...) end
+function setTextWithLineBreaks(widget, eventName, ...) end
+function setTouchControllerMode(widget, eventName, ...) end
+function setTurretColor(widget, eventName, ...) end
+function setTurretMode(widget, eventName, ...) end
+function setWeaponColor(widget, eventName, ...) end
+function shouldDisplayNotorietyBar(widget, eventName, ...) end
+function showBar(widget, eventName, ...) end
+function showCell(widget, eventName, ...) end
+function showCompass(widget, eventName, ...) end
+function showDebugLine(widget, eventName, ...) end
+function showDebugLog(widget, eventName, ...) end
+function showDebugOutline(widget, eventName, ...) end
+function showDialogMenu(widget, eventName, ...) end
+function showEnvironmentInfo(widget, eventName, ...) end
+function showFill(widget, eventName, ...) end
+function showFPSCounter(widget, eventName, ...) end
+function showGameOver(widget, eventName, ...) end
+function showMouseOverText(widget, eventName, ...) end
+function showNotification(widget, eventName, ...) end
+function showNotorietyBar(widget, eventName, ...) end
+function showOutline(widget, eventName, ...) end
+function showOverlay(widget, eventName, ...) end
+function showPromo(widget, eventName, ...) end
+function showSkipNote(widget, eventName, ...) end
+function showSofttarget(widget, eventName, ...) end
+function sliderHandler(widget, eventName, ...) end
+function sortDebugLog(widget, eventName, ...) end
+function sorter(widget, eventName, ...) end
+function startScan(widget, eventName, ...) end
+function startSofttargetInteraction(widget, eventName, ...) end
+function statusText(widget, eventName, ...) end
+function switchButton(widget, eventName, ...) end
+function switchScreenshot(widget, eventName, ...) end
+function switchTargetMonitorNotification(widget, eventName, ...) end
+function sz(widget, eventName, ...) end
+function test1(widget, eventName, ...) end
+function test2(widget, eventName, ...) end
+function toggleDebugLog(widget, eventName, ...) end
+function toggleRadarMode(widget, eventName, ...) end
+function ToReprString(widget, eventName, ...) end
+function truncateLeftRightText(widget, eventName, ...) end
+function unmapDialogButton(widget, eventName, ...) end
+function UnregisterEvent(widget, eventName, ...) end
+function unselectDialogButton(widget, eventName, ...) end
+function unselectMouseJoystickButton(widget, eventName, ...) end
+function unsetPointerOverride(widget, eventName, ...) end
+function updateActiveState(widget, eventName, ...) end
+function updateActivityColor(widget, eventName, ...) end
+function updateAimTargetElement(widget, eventName, ...) end
+function updateAllOutlines(widget, eventName, ...) end
+function updateAllPointerOverrides(widget, eventName, ...) end
+function updateArrowState(widget, eventName, ...) end
+function updateBoostBar(widget, eventName, ...) end
+function updateBottomText(widget, eventName, ...) end
+function updateButtons(widget, eventName, ...) end
+function updateChatNotification(widget, eventName, ...) end
+function updateCheckEngineLight(widget, eventName, ...) end
+function updateColor(widget, eventName, ...) end
+function updateControllerSelection(widget, eventName, ...) end
+function updateCountermeasures(widget, eventName, ...) end
+function updateCoverLine(widget, eventName, ...) end
+function updateDebugMessage(widget, eventName, ...) end
+function updateDebugOutlines(widget, eventName, ...) end
+function updateDialogMenuButtons(widget, eventName, ...) end
+function updateDronePanel(widget, eventName, ...) end
+function updateDroneType(widget, eventName, ...) end
+function updateDynamicRectangleIcons(widget, eventName, ...) end
+function updateElementPosition(widget, eventName, ...) end
+function updateFPS(widget, eventName, ...) end
+function updateHullShield(widget, eventName, ...) end
+function updateIcon(widget, eventName, ...) end
+function updateIconSize(widget, eventName, ...) end
+function updateIndicators(widget, eventName, ...) end
+function updateIndicatorScalePositionAndActivation(widget, eventName, ...) end
+function updateInteractiveText(widget, eventName, ...) end
+function updateMailNotification(widget, eventName, ...) end
+function updateMatchSpeedElement(widget, eventName, ...) end
+function updateMessages(widget, eventName, ...) end
+function updateMessageStartTimes(widget, eventName, ...) end
+function updateMessageTicker(widget, eventName, ...) end
+function updateMissileLock(widget, eventName, ...) end
+function updateMissileLockColor(widget, eventName, ...) end
+function updateMissileLocks(widget, eventName, ...) end
+function updateMissionArrow(widget, eventName, ...) end
+function updateMissionDetails(widget, eventName, ...) end
+function updateMousePosition(widget, eventName, ...) end
+function updateMouseSteeringLine(widget, eventName, ...) end
+function updateNotorietyLadder(widget, eventName, ...) end
+function updateOffScreenBox(widget, eventName, ...) end
+function updateOutline(widget, eventName, ...) end
+function updateOxygenBar(widget, eventName, ...) end
+function updatePointerOverride(widget, eventName, ...) end
+function updateProgressbar(widget, eventName, ...) end
+function updateRadar(widget, eventName, ...) end
+function updateRadarExtents(widget, eventName, ...) end
+function updateRadarTarget(widget, eventName, ...) end
+function updateRectangleElements(widget, eventName, ...) end
+function updateReenableButton(widget, eventName, ...) end
+function updateRelation(widget, eventName, ...) end
+function updateRelationStatusData(widget, eventName, ...) end
+function updateScenarioTexts(widget, eventName, ...) end
+function updateScreenshots(widget, eventName, ...) end
+function updateSelectedButton(widget, eventName, ...) end
+function updateSelection(widget, eventName, ...) end
+function updateSeta(widget, eventName, ...) end
+function updateSideText(widget, eventName, ...) end
+function updateSideText2(widget, eventName, ...) end
+function updateSideTextPosition(widget, eventName, ...) end
+function updateSofttargetLock(widget, eventName, ...) end
+function updateSofttargetManager(widget, eventName, ...) end
+function updateSofttargetManagerActivationState(widget, eventName, ...) end
+function updateSofttargetTargetElement(widget, eventName, ...) end
+function updateSpeedbar(widget, eventName, ...) end
+function updateState(widget, eventName, ...) end
+function updateStates(widget, eventName, ...) end
+function updateTargetArrow(widget, eventName, ...) end
+function updateTargetElement(widget, eventName, ...) end
+function updateTargetElementData(widget, eventName, ...) end
+function updateTargetElementPosition(widget, eventName, ...) end
+function updateTargetMonitorDisplay(widget, eventName, ...) end
+function updateTargetMonitorNotifications(widget, eventName, ...) end
+function updateTargetText(widget, eventName, ...) end
+function updateText(widget, eventName, ...) end
+function updateVelocityIndicator(widget, eventName, ...) end
+function updateWeaponGroup(widget, eventName, ...) end
+function updateWeaponPanel(widget, eventName, ...) end
+function upgradeData(widget, eventName, ...) end
+function value(widget, eventName, ...) end
+function vex(widget, eventName, ...) end
+function vm(widget, eventName, ...) end
+function warning(widget, eventName, ...) end

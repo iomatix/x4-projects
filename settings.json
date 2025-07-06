@@ -1,8 +1,15 @@
 {
+
   "Lua.workspace.library": [
     "${workspaceFolder}/_stubs/x4_api_stubs.lua",
-    "${workspaceFolder}/_stubs/x4_api_stubs_custom.lua",
+    "${workspaceFolder}/_stubs/x4_api_stubs_custom.lua"
   ],
-  "Lua.diagnostics.globals": [
-  ]
+  
+
+  "luacheck.config": ".luacheckrc",
+  "luacheck.args": [
+    "--std", "lua51"
+  ],
+
+  "Lua.runtime.version": "Lua 5.1"
 }

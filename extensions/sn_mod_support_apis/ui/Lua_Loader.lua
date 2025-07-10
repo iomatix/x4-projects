@@ -129,6 +129,31 @@ local function Lua_Loader_Require_Helper(name, methodName, requestorName)
     return true, module.exports, module.init
 end
 
+local baseRequire = require
+require = function(name)
+   if isDebug then DebugError("[Lua_Loader] require (global): Attempting to require module: " .. tostring(name)) end -- Debug: Log global require attempt
+    local success, exports, init = Lua_Loader_Require_Helper(name, "Lua_Loader.require()")
+    
+    if not success then
+        local base_success, base_exports = pcall(baseRequire, name)
+       if isDebug then DebugError("[Lua_Loader] require (global): Base require attempt for " .. tostring(name) .. " resulted in success: " .. tostring(base_success)) end -- Debug: Log global base require result
+        if not base_success then
+           if isDebug then DebugError("[Lua_Loader] require (global): Failed to require module: " .. tostring(name) .. ", error: " .. tostring(base_exports)) end -- Debug: Log global base require failure
+            error(base_exports)
+        end
+       if isDebug then DebugError("[Lua_Loader] require (global): Successfully required module " .. tostring(name) .. " via base require") end -- Debug: Log successful global base require
+        return base_exports
+    end
+
+    if init ~= nil and type(init) == "function" then
+        init()
+       if isDebug then DebugError("[Lua_Loader] require (global): Initialized module: " .. tostring(name)) end -- Debug: Log global module initialization
+    end
+
+   if isDebug then DebugError("[Lua_Loader] require (global): Successfully required module: " .. tostring(name)) end -- Debug: Log successful global require
+    return exports
+end
+
 local function on_Load_Lua_File(_, file_path)
    if isDebug then DebugError("[Lua_Loader] on_Load_Lua_File: Attempting to load file: " .. tostring(file_path)) end -- Debug: Log file load attempt
     -- First look for our modules
@@ -235,31 +260,6 @@ function Lua_Loader.require(name)
     end
 
     return success, exports, init
-end
-
-local baseRequire = require
-require = function(name)
-   if isDebug then DebugError("[Lua_Loader] require (global): Attempting to require module: " .. tostring(name)) end -- Debug: Log global require attempt
-    local success, exports, init = Lua_Loader_Require_Helper(name, "Lua_Loader.require()")
-    
-    if not success then
-        local base_success, base_exports = pcall(baseRequire, name)
-       if isDebug then DebugError("[Lua_Loader] require (global): Base require attempt for " .. tostring(name) .. " resulted in success: " .. tostring(base_success)) end -- Debug: Log global base require result
-        if not base_success then
-           if isDebug then DebugError("[Lua_Loader] require (global): Failed to require module: " .. tostring(name) .. ", error: " .. tostring(base_exports)) end -- Debug: Log global base require failure
-            error(base_exports)
-        end
-       if isDebug then DebugError("[Lua_Loader] require (global): Successfully required module " .. tostring(name) .. " via base require") end -- Debug: Log successful global base require
-        return base_exports
-    end
-
-    if init ~= nil and type(init) == "function" then
-        init()
-       if isDebug then DebugError("[Lua_Loader] require (global): Initialized module: " .. tostring(name)) end -- Debug: Log global module initialization
-    end
-
-   if isDebug then DebugError("[Lua_Loader] require (global): Successfully required module: " .. tostring(name)) end -- Debug: Log successful global require
-    return exports
 end
 
 function Lua_Loader.define(name, moduleFunction)

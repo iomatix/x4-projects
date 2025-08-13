@@ -15,7 +15,7 @@ from X4_Python_Pipe_Server.Modules.config import parse_args, load_permissions, s
 from X4_Python_Pipe_Server.Classes import Pipe_Server, Pipe_Client, Client_Garbage_Collected
 
 VERSION = '2.2.0'
-PIPE_NAME = 'x4_python_host'
+PIPE_NAME = 'x4_pipe'
 
 logger = logging.getLogger(__name__)
 

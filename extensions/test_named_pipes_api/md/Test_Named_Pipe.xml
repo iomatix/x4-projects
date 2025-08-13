@@ -124,17 +124,37 @@ TODO: a full (though simple) app that uses a pipe regularly during runtime,
   
     <conditions>
       <!-- Uncomment to disable this cue. -->
-      <check_value value="false"/>
-    </conditions>>
+      <check_value value="true"/>
+    </conditions>
   
     <actions>
       <!-- Set up some names.-->
       <set_value name="$Debug_File_Name" exact="'responses.log'"/>
       <set_value name="$Debug_Directory" exact="'interface'"/>
       
-      <show_notification text="'Test_Named_Pipe started'" sound="notification_warning" priority="2" />
+      <show_notification text="'Test_Named_Pipe started ...'" sound="notification_warning" priority="2" />
+      <show_notification text="'MOD Version: 2025-08-13 15:00 CET'" sound="notification_warning" priority="2" />
+      <show_notification text="'Loading Named Pipes...'" sound="notification_generic" priority="1" />
+      
+      <!-- Debug messages in chat (might not work in X4 8.0) -->
+      <raise_lua_event name="'directChatMessageReceived'" param="'[DEBUG] Test_Named_Pipe started at time: ' + player.age"/>
+      <raise_lua_event name="'directChatMessageReceived'" param="'[DEBUG] MOD Version: 2025-08-13 15:00 CET - Changes loaded!'"/>
+      <raise_lua_event name="'directChatMessageReceived'" param="'[DEBUG] Loading Named Pipes Interface for X4 8.0'"/>
+      
+      <!-- Explicitly load the Named Pipes Interface for X4 8.0 compatibility -->
+      <raise_lua_event name="'Loading_NamedPipes'" param="null"/>
+      
+      <!-- Load direct pipe test -->
+      <raise_lua_event name="'Lua_Loader.Load'" param="'extensions.test_named_pipes_api.ui.direct_pipe_test'"/>
+      
+      <!-- More debug messages -->
+      <raise_lua_event name="'directChatMessageReceived'" param="'[DEBUG] About to send test pipe messages'"/>
       
       <!-- Do some test writes/reads. This follows the same pattern as the lua test code. -->
+      
+      <!-- Test messages with timestamps -->
+      <signal_cue_instantly cue="md.Named_Pipes.Write" param="table[$pipe='x4_pipe', $msg='timestamp_test:' + player.age, $cue=Write_Callback]"/>
+      <signal_cue_instantly cue="md.Named_Pipes.Write" param="table[$pipe='x4_pipe', $msg='simple_test:hello_from_x4', $cue=Write_Callback]"/>
       
       <!-- Individual writes. -->
       <signal_cue_instantly cue="md.Named_Pipes.Write" param="table[$pipe='x4_pipe', $msg='write:[test1]5', $cue=Write_Callback]"/>
@@ -157,6 +177,8 @@ TODO: a full (though simple) app that uses a pipe regularly during runtime,
       <!-- Generic pipe check. -->
       <signal_cue_instantly cue="md.Named_Pipes.Check" param="table[$pipe='x4_pipe', $cue=Check_Callback]"/>
       
+      <!-- Script completion notification -->
+      <show_notification text="'ALL TESTS COMPLETED - Script finished!'" sound="notification_generic" priority="1" />
       
       <!-- Tell the server to close the pipe. Server will wait for pending reads to complete. -->
       <!-- <signal_cue_instantly cue="md.Named_Pipes.Write" param="table[$pipe='x4_pipe', $msg='close']"/> -->

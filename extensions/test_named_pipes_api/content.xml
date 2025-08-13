@@ -7,7 +7,7 @@
   date="2019-07-23" 
   save="false" 
   sync="false" 
-  enabled="false">
+  enabled="true">
 
   <!--Mod support APIs-->
   <dependency id="ws_2042901274" version="100" optional="false"/>

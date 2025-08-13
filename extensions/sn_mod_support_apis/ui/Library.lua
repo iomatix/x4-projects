@@ -193,6 +193,11 @@ end
 function L.Print_Table(itable, name)
     if not name then name = "" end
     if isDebug then DebugError("[Library] Print_Table: Printing table: " .. tostring(name)) end -- Debug: Log table printing start
+    -- Check if itable is actually a table
+    if not itable or type(itable) ~= "table" then
+        if isDebug then DebugError("[Library] Print_Table: itable is not a table, type: " .. tostring(type(itable))) end -- Debug: Log non-table
+        return
+    end
     -- Construct a string with newlines between table entries.
     -- Start with header.
     local str = "Table "..name.." contents:\n"

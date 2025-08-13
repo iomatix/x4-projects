@@ -14,7 +14,7 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.c_library.winpipe", functio
         License: MIT
     ]]
 
-    local isDebug = false -- Set to true for debug messages, false for production
+    local isDebug = true -- Set to true for debug messages, false for production
     
     -- === Enhanced Windows OS Detection ===
     local function is_windows_platform()

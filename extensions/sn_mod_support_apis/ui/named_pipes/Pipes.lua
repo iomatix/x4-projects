@@ -129,8 +129,14 @@ Lua_Loader.define("extensions.sn_mod_support_apis.ui.named_pipes.Pipes", functio
             if isDebug then DebugError("[Pipes] Connect_Pipe: Attempt " .. i .. " for pipe: " .. name) end -- Debug: Log connection attempt
             local wpath = M.prefix .. name .. "_in"
             local rpath = M.prefix .. name .. "_out"
-            p.write_file = winpipe.open_pipe(wpath, "w")
+            -- Connect in same order as server expects: out first, then in
+            if isDebug then DebugError("[Pipes] Connect_Pipe: Trying to open read pipe: " .. rpath) end
             p.read_file = winpipe.open_pipe(rpath, "r")
+            if isDebug then DebugError("[Pipes] Connect_Pipe: Read pipe result: " .. tostring(p.read_file)) end
+            
+            if isDebug then DebugError("[Pipes] Connect_Pipe: Trying to open write pipe: " .. wpath) end
+            p.write_file = winpipe.open_pipe(wpath, "w")
+            if isDebug then DebugError("[Pipes] Connect_Pipe: Write pipe result: " .. tostring(p.write_file)) end
             
             if p.write_file and p.read_file then
                 DebugError("Connected pipe: " .. name)

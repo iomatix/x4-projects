@@ -146,7 +146,7 @@ TODO:
       <set_value name="Globals.$pipe_name_prefix" exact="'\\\\.\\pipe\\'" />
       <set_value name="Globals.$pipe_status_cues" exact="[]"/>
       <!-- Debug printout chance; generally 0 or 100; ego style naming. -->
-      <set_value name="Globals.$DebugChance" exact="0" />
+      <set_value name="Globals.$DebugChance" exact="100" />
     </actions>
   </library>
       
@@ -648,28 +648,8 @@ TODO:
       -->
       <set_value name="$lua_signal" exact="'pipe'+ $command +'_complete_'+$access_id"/>
 
-      <!-- Determine pipe suffix based on $is_server and $command -->
-      <do_if value="$is_server">
-        <!-- Server logic: reverse suffixes -->
-        <do_if value="$command == 'Write'">
-          <set_value name="$pipe_suffix" exact="'_out'" />
-        </do_if>
-        <do_elseif value="$command == 'Read'">
-          <set_value name="$pipe_suffix" exact="'_in'" />
-        </do_elseif>
-      </do_if>
-      <do_else>
-        <!-- Mod logic: original suffixes -->
-        <do_if value="$command == 'Write'">
-          <set_value name="$pipe_suffix" exact="'_in'" />
-        </do_if>
-        <do_elseif value="$command == 'Read'">
-          <set_value name="$pipe_suffix" exact="'_out'" />
-        </do_elseif>
-      </do_else>
-
-      <!-- Construct full pipe name -->
-      <set_value name="$full_pipe_name" exact="$pipe_name + $pipe_suffix" />
+      <!-- Use base pipe name directly - let Pipes.lua handle suffix logic -->
+      <set_value name="$full_pipe_name" exact="$pipe_name" />
 
       <!--Send the command.-->
       <signal_cue_instantly cue="Send_Command" param="table[

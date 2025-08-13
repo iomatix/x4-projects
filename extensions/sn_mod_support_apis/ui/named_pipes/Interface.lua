@@ -105,23 +105,47 @@ writing and reading functions are shown here.
         -- 1) one-time event hookup
         if not __pipe_callback_registered then
             RegisterEvent("pipeProcessCommand", L.Process_Command)
+            RegisterEvent("retry_player_id", L._OnTimer_CheckPlayer)
             __pipe_callback_registered = true
             if isDebug then
-                DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand event handler")
+                DebugError("[Pipes.Interface] Init: Registered pipeProcessCommand and retry_player_id event handlers")
             end
         end
 
-        -- 1.b) start polling for a valid player ID
-        RegisterEvent("onGameFrame", L._OnFrame_CheckPlayer)
+        -- 1.b) start polling for a valid player ID with immediate attempt
+        if isDebug then
+            DebugError("[Pipes.Interface] Init: Starting player ID polling")
+        end
+        
+        -- Try to get player ID immediately
+        L._OnFrame_CheckPlayer()
+        
+        -- If that worked, try a test pipe write immediately
+        if L.player_id then
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Player ID available, attempting test write")
+            end
+            -- Try a direct pipe write to test the connection
+            Pipes.Schedule_Write("x4_pipe", "init_test", "test_from_interface_init")
+        else
+            if isDebug then
+                DebugError("[Pipes.Interface] Init: Player ID not available immediately, setting up timer")
+            end
+            -- Use AddUITriggeredEvent to create a delayed retry
+            AddUITriggeredEvent("Pipes", "retry_player_id", 1.0)
+        end
     end
 
     -- Stage 2 of the L.Init()
     -- runs each frame until we get a real player ID
     function L._OnFrame_CheckPlayer()
         local raw_id = C.GetPlayerID() or 0
+        if isDebug then
+            DebugError("[Pipes.Interface] _OnFrame_CheckPlayer: raw_id = " .. tostring(raw_id))
+        end
         if raw_id > 0 then
             -- stop polling
-            UnregisterEvent("onGameFrame", L._OnFrame_CheckPlayer)
+            UnregisterEvent("frame", L._OnFrame_CheckPlayer)
 
             -- 2) cache the 64-bit key
             L.player_id = ConvertStringTo64Bit(tostring(raw_id))
@@ -129,10 +153,18 @@ writing and reading functions are shown here.
                 DebugError("[Pipes.Interface] Init: Cached player ID: " .. tostring(L.player_id))
             end
 
-            -- 3) clear leftover args
-            SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-            if isDebug then
-                DebugError("[Pipes.Interface] Init: Cleared pipe_api_args from player blackboard")
+            -- 3) clear leftover args (with error handling)
+            local success, error_msg = pcall(function()
+                SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
+            end)
+            if success then
+                if isDebug then
+                    DebugError("[Pipes.Interface] Init: Cleared pipe_api_args from player blackboard")
+                end
+            else
+                if isDebug then
+                    DebugError("[Pipes.Interface] Init: Failed to clear pipe_api_args: " .. tostring(error_msg))
+                end
             end
 
             -- 4) notify Python server
@@ -142,21 +174,21 @@ writing and reading functions are shown here.
             end
 
             -- 5) dummy Read
-            Pipes.Schedule_Read("x4_python_host", "init_probe", false)
+            Pipes.Schedule_Read("x4_pipe", "init_probe", false)
             if isDebug then
-                DebugError("[Pipes.Interface] Init: Scheduled dummy read for x4_python_host, callback: init_probe")
+                DebugError("[Pipes.Interface] Init: Scheduled dummy read for x4_pipe, callback: init_probe")
             end
 
             -- 6) dummy Write
-            Pipes.Schedule_Write("x4_python_host", "init_probe", "ping")
+            Pipes.Schedule_Write("x4_pipe", "init_probe", "ping")
             if isDebug then
-                DebugError("[Pipes.Interface] Init: Scheduled dummy write for x4_python_host, callback: init_probe, message: ping")
+                DebugError("[Pipes.Interface] Init: Scheduled dummy write for x4_pipe, callback: init_probe, message: ping")
             end
 
             -- 7) expedite handshake
-            pcall(Pipes.Connect_Pipe, "x4_python_host")
+            pcall(Pipes.Connect_Pipe, "x4_pipe")
             if isDebug then
-                DebugError("[Pipes.Interface] Init: Attempted Connect_Pipe for x4_python_host")
+                DebugError("[Pipes.Interface] Init: Attempted Connect_Pipe for x4_pipe")
             end
         end
     end
@@ -166,24 +198,50 @@ writing and reading functions are shown here.
         -- If the list of queued args is empty, grab more from md.
         if #L.queued_args == 0 then
             if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Queued args empty, fetching from blackboard") end -- Debug: Log fetching args
+            -- Check if player_id is valid, if not try to get it now
+            if not L.player_id then
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: No player_id available, trying to get it now") end
+                L._OnFrame_CheckPlayer()
+                if not L.player_id then
+                    if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Still no player_id after retry") end
+                    return nil
+                end
+            end
             -- Args are attached to the player component object.
-            local args_list = GetNPCBlackboard(L.player_id, "$pipe_api_args")
+            local args_list = nil
+            local success, error_msg = pcall(function()
+                args_list = GetNPCBlackboard(L.player_id, "$pipe_api_args")
+            end)
+            if not success then
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Failed to get blackboard: " .. tostring(error_msg)) end
+                return nil
+            end
 
             -- Loop over it and move entries to the queue.
-            for i, v in ipairs(args_list) do
-                table.insert(L.queued_args, v)
+            if args_list then
+                for i, v in ipairs(args_list) do
+                    table.insert(L.queued_args, v)
+                end
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Fetched " .. tostring(#args_list) .. " args from blackboard") end -- Debug: Log number of args fetched
+            else
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: No args_list found on blackboard") end -- Debug: Log nil args_list
             end
-            if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Fetched " .. tostring(#args_list) .. " args from blackboard") end -- Debug: Log number of args fetched
 
             -- Clear the md var by writing nil.
-            SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
-            if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Cleared pipe_api_args from blackboard") end -- Debug: Log blackboard clearing
+            local clear_success, clear_error = pcall(function()
+                SetNPCBlackboard(L.player_id, "$pipe_api_args", nil)
+            end)
+            if clear_success then
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Cleared pipe_api_args from blackboard") end -- Debug: Log blackboard clearing
+            else
+                if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Failed to clear blackboard: " .. tostring(clear_error)) end
+            end
         end
         -- if isDebug then DebugError("num args: "..tostring(#L.queued_args))
 
         -- Pop the first table entry.
         local args = table.remove(L.queued_args, 1)
-        if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Popped args: " .. Print_Table(args)) end -- Debug: Log popped args
+        if isDebug then DebugError("[Pipes.Interface] Get_Next_Args: Popped args: " .. (args and Print_Table(args) or "nil")) end -- Debug: Log popped args
 
         -- Check args for any 0 entries on bool fields, convert to false.
         for _, field in ipairs(L.bool_fields) do
@@ -195,11 +253,39 @@ writing and reading functions are shown here.
 
         return args
     end
+    
+    -- Timer-based player ID checker
+    function L._OnTimer_CheckPlayer()
+        if isDebug then
+            DebugError("[Pipes.Interface] _OnTimer_CheckPlayer: Timer triggered")
+        end
+        
+        if not L.player_id then
+            L._OnFrame_CheckPlayer()
+            
+            -- If we got player ID, try a test write
+            if L.player_id then
+                if isDebug then
+                    DebugError("[Pipes.Interface] _OnTimer_CheckPlayer: Player ID obtained, attempting test write")
+                end
+                Pipes.Schedule_Write("x4_pipe", "timer_test", "test_from_timer")
+            else
+                if isDebug then
+                    DebugError("[Pipes.Interface] _OnTimer_CheckPlayer: Still no player ID, retrying in 1s")
+                end
+                AddUITriggeredEvent("Pipes", "retry_player_id", 1.0)
+            end
+        end
+    end
 
     -- Generic command handler.
     -- When this is signalled, there may be multiple commands queued.
     function L.Process_Command()
         local args = L.Get_Next_Args()
+        if not args then
+            if isDebug then DebugError("[Pipes.Interface] Process_Command: No args available, skipping") end
+            return
+        end
         if isDebug then DebugError("[Pipes.Interface] Process_Command: Processing command: " .. tostring(args.command) .. ", pipe: " .. tostring(args.pipe_name) .. ", access_id: " .. tostring(args.access_id)) end -- Debug: Log command processing start
 
         if Lib.debug.print_to_log then
